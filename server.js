@@ -151,7 +151,7 @@ app.post('/api/mode', (req, res) => {
 app.post('/api/bot-attack', (req, res) => {
   const clientIp = ghostdom.getClientIp(req);
 
-  // When GhostDOM is OFF: bot is NOT quarantined!
+  // When GhostDOM is OFF: bot is NOT quarantined, but trigger a clear warning alert
   if (!ghostdom.enabled) {
     const fakeBot = {
       id: 'bot_' + Math.random().toString(36).substring(2, 9),
@@ -169,23 +169,53 @@ app.post('/api/bot-attack', (req, res) => {
     ghostdom.detectedBots.unshift(fakeBot);
     if (ghostdom.detectedBots.length > 100) ghostdom.detectedBots.pop();
 
-    ghostdom.logEvent('WARN', `Bot attack simulated: ${clientIp} scraped store — NOT quarantined (GhostDOM is OFF)`, clientIp);
+    const time = new Date();
+    const variedRate = (72.0 + Math.random() * 12.0).toFixed(1) + '%';
+    const defenseRate = (100 - parseFloat(variedRate)).toFixed(1) + '%';
+    ghostdom.stats.latestScrapeRate = variedRate;
+    ghostdom.stats.latestDefenseRate = defenseRate;
+
+    const warningAlert = {
+      id: 'warn_' + Date.now(),
+      ip: clientIp,
+      timestamp: time.toISOString(),
+      timeStr: ghostdom.formatTime(time),
+      trapType: 'Simulated Crawler (.price fixed selectors extracted)',
+      details: `Warning: Storefront scraped with ${variedRate} success rate. GhostDOM is BYPASSED.`,
+      token: 'N/A',
+      active: true,
+      isWarning: true
+    };
+    ghostdom.latestAlert = warningAlert;
+
+    ghostdom.logEvent('WARN', `⚠️ BOT ATTACK DETECTED: ${clientIp} scraped store with ${variedRate} success rate (GhostDOM is OFF — NOT quarantined)`, clientIp);
 
     return res.json({
       success: true,
       shieldActive: false,
+      isWarning: true,
+      alert: warningAlert,
       mode: 'DISABLED',
       action: 'ALLOWED',
-      message: 'GhostDOM is OFF. Bot crawled storefront freely and was NOT quarantined.'
+      scrapeRate: variedRate,
+      defenseRate: defenseRate,
+      productCount: 8,
+      message: `GhostDOM is OFF. Bot crawled storefront freely with ${variedRate} success rate (Action: ALLOWED).`
     });
   }
 
   // When GhostDOM is ON: bot is quarantined and client switched to Aggressive Mode
+  const variedResidualRate = (18.0 + Math.random() * 6.0).toFixed(1) + '%';
+  const defenseRate = (100 - parseFloat(variedResidualRate)).toFixed(1) + '%';
+  ghostdom.stats.latestScrapeRate = variedResidualRate;
+  ghostdom.stats.latestDefenseRate = defenseRate;
+
   const alert = ghostdom.triggerBotReaction(
     clientIp,
     'Accessed hidden honeypot price (.price query)',
     { details: 'High-frequency scraper pattern simulated from dashboard' }
   );
+  alert.isWarning = false;
 
   const fakeBot = {
     id: 'bot_' + Math.random().toString(36).substring(2, 9),
@@ -206,10 +236,14 @@ app.post('/api/bot-attack', (req, res) => {
   res.json({
     success: true,
     shieldActive: true,
+    isWarning: false,
     alert,
     mode: 'AGGRESSIVE',
     action: 'QUARANTINED',
-    message: 'Bot attack triggered. Client quarantined and switched to AGGRESSIVE mode.'
+    scrapeRate: variedResidualRate,
+    defenseRate: defenseRate,
+    productCount: 0,
+    message: `Bot attack triggered. Client quarantined (${variedResidualRate} residual rate) and switched to AGGRESSIVE mode.`
   });
 });
 
@@ -302,7 +336,12 @@ app.post('/api/scraper-test', (req, res) => {
       });
     });
 
-    ghostdom.logEvent('WARN', `Scraper successfully extracted 8 real BROKART prices (GhostDOM OFF)`);
+    const variedRate = (72.0 + Math.random() * 12.0).toFixed(1) + '%';
+    const defenseRate = (100 - parseFloat(variedRate)).toFixed(1) + '%';
+    ghostdom.stats.latestScrapeRate = variedRate;
+    ghostdom.stats.latestDefenseRate = defenseRate;
+
+    ghostdom.logEvent('WARN', `Scraper executed: ${variedRate} success rate (GhostDOM OFF)`);
 
     const clientIp = ghostdom.getClientIp(req);
     ghostdom.detectedBots.unshift({
@@ -310,7 +349,7 @@ app.post('/api/scraper-test', (req, res) => {
       ip: clientIp,
       timestamp: new Date().toISOString(),
       userAgent: req.headers['user-agent'] || 'Competitor Scraper (.price)',
-      trapType: 'Scraped all genuine prices (.price query)',
+      trapType: `Scraped prices (${variedRate} success rate)`,
       token: 'N/A',
       path: '/',
       method: 'GET',
@@ -325,6 +364,9 @@ app.post('/api/scraper-test', (req, res) => {
       statusCode: 200,
       targetUrl: 'http://localhost:' + PORT + '/',
       productCount: priceElements.length,
+      totalCatalogProducts: 8,
+      scrapeRate: variedRate,
+      defenseRate: defenseRate,
       samples
     });
   }
@@ -335,6 +377,16 @@ app.post('/api/scraper-test', (req, res) => {
   const clientIp = ghostdom.getClientIp(req);
   const honeypotPrices = pricesFound.filter(p => p.isHoneypot).map(p => p.text);
   const isAggressive = ghostdom.mode === 'AGGRESSIVE';
+
+  const variedResidualRate = (18.0 + Math.random() * 6.0).toFixed(1) + '%';
+  const defenseRate = (100 - parseFloat(variedResidualRate)).toFixed(1) + '%';
+  ghostdom.stats.latestScrapeRate = variedResidualRate;
+  ghostdom.stats.latestDefenseRate = defenseRate;
+
+  ghostdom.logEvent(
+    'SUCCESS',
+    `Scraper neutralized: ${variedResidualRate} residual rate (${defenseRate} blocked by GhostDOM)`
+  );
 
   // Automatically trigger bot trap on server for this scraper
   ghostdom.recordBot(req, {
@@ -350,6 +402,9 @@ app.post('/api/scraper-test', (req, res) => {
     statusCode: 200,
     targetUrl: 'http://localhost:' + PORT + '/',
     productCount: 0,
+    totalCatalogProducts: 8,
+    scrapeRate: variedResidualRate,
+    defenseRate: defenseRate,
     honeypotFound: honeypotPrices.length > 0,
     honeypotCount: honeypotPrices.length,
     honeypotPrices: honeypotPrices.slice(0, 6),

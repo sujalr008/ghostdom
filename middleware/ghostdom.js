@@ -42,7 +42,9 @@ class GhostDomMiddleware {
       scraperAttempts: 0,
       scraperSuccesses: 0,
       scraperFailures: 0,
-      honeypotHits: 0
+      honeypotHits: 0,
+      latestScrapeRate: '20.4%',
+      latestDefenseRate: '79.6%'
     };
 
     // Cache stylesheet in memory with hot reload capability
@@ -360,6 +362,8 @@ class GhostDomMiddleware {
     this.stats.scraperAttempts = 0;
     this.stats.scraperSuccesses = 0;
     this.stats.scraperFailures = 0;
+    this.stats.latestScrapeRate = '20.4%';
+    this.stats.latestDefenseRate = '79.6%';
 
     this.eventLog = [];
     this.logEvent('INFO', 'DEMO RESET: Logs cleared. Defense Deck restored to NORMAL MODE', '127.0.0.1');

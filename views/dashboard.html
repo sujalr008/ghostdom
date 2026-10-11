@@ -14,11 +14,11 @@
     <!-- Big Flashing Red Alert Banner (Instant Reaction) -->
     <div id="bot-alert-banner" class="bot-alert-banner" role="alert" aria-live="assertive">
       <div class="alert-left-content">
-        <span class="alert-skull-icon">💀</span>
+        <span class="alert-skull-icon" id="alert-icon">💀</span>
         <div>
           <div class="alert-title-text">
-            <span>☠ BOT DETECTED ☠</span>
-            <span class="alert-mode-tag">SWITCHED TO AGGRESSIVE MODE</span>
+            <span id="alert-title-main">☠ BOT DETECTED ☠</span>
+            <span class="alert-mode-tag" id="alert-mode-tag">SWITCHED TO AGGRESSIVE MODE</span>
           </div>
           <div class="alert-subtitle-text" id="alert-subtitle-text">
             Flagged IP: <strong id="alert-ip">127.0.0.1</strong> &bull; 
@@ -122,7 +122,7 @@
           <span id="stat-rate-badge" class="comp-pill bot">0.0% (BLOCKED)</span>
         </div>
         <div class="stat-card-val count-up" id="stat-success-rate">0.0%</div>
-        <div class="stat-card-sub">Extracting genuine <code>.price</code> data</div>
+        <div class="stat-card-sub" id="stat-rate-sub">Extracting genuine <code>.price</code> data</div>
       </div>
 
       <!-- Latency & Offline Canvas Activity Chart -->
