@@ -1,54 +1,85 @@
 /**
- * GhostDOM Live Defense Dashboard Controller (dashboard.js)
- * Manages live telemetry, master toggle, side-by-side diffing, scraper demo simulation,
- * and bot detection feed.
+ * GhostDOM Security Command Deck Client (dashboard.js) - v2.0
+ * Handles Web Audio API alerts, instant bot reaction animations, live event logging,
+ * Aggressive Mode transitions, and Human vs Bot side-by-side comparison.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // UI Elements
-  const toggleCheckbox = document.getElementById('ghostdom-toggle');
-  const toggleLabel = document.getElementById('toggle-label-text');
-  const dotStatus = document.getElementById('dot-status');
-  const valStatus = document.getElementById('val-status');
-  const valStatusSub = document.getElementById('val-status-sub');
-  const valLatency = document.getElementById('val-latency');
-  const valSuccessRate = document.getElementById('val-success-rate');
-  const badgeRate = document.getElementById('badge-rate');
-  const valTraps = document.getElementById('val-traps');
+  // Banner & Audio
+  const alertBanner = document.getElementById('bot-alert-banner');
+  const alertIp = document.getElementById('alert-ip');
+  const alertTime = document.getElementById('alert-time');
+  const alertVector = document.getElementById('alert-vector');
+  const btnDismissAlert = document.getElementById('btn-dismiss-alert');
 
-  // Inspector Elements
-  const btnFetchDiff = document.getElementById('btn-fetch-diff');
-  const codeReq1 = document.getElementById('code-req-1');
-  const codeReq2 = document.getElementById('code-req-2');
-  const hashReq1 = document.getElementById('hash-req-1');
-  const hashReq2 = document.getElementById('hash-req-2');
-  const req1Meta = document.getElementById('req1-meta');
-  const req2Meta = document.getElementById('req2-meta');
-  const entropyPill = document.getElementById('entropy-pill');
+  // Controls & Badges
+  const deckModeBadge = document.getElementById('deck-mode-badge');
+  const deckModeDot = document.getElementById('deck-mode-dot');
+  const masterShieldToggle = document.getElementById('master-shield-toggle');
+  const masterToggleLabel = document.getElementById('master-toggle-label');
 
-  // Scraper Console
-  const btnRunScraper = document.getElementById('btn-run-scraper');
-  const terminalBody = document.getElementById('scraper-terminal');
-
-  // Bot Feed
-  const botTableBody = document.getElementById('bot-table-body');
+  // Top Action Buttons
   const btnSimulateBot = document.getElementById('btn-simulate-bot');
-  const btnClearBots = document.getElementById('btn-clear-bots');
+  const btnResetDemo = document.getElementById('btn-reset-demo');
 
-  // State
-  let isFetchingDiff = false;
+  // Stats
+  const statRequestsMutated = document.getElementById('stat-requests-mutated');
+  const statBotsDetected = document.getElementById('stat-bots-detected');
+  const statSuccessRate = document.getElementById('stat-success-rate');
+  const statRateBadge = document.getElementById('stat-rate-badge');
+  const statLatency = document.getElementById('stat-latency');
 
-  // Simple string hash helper for visual comparison
-  function simpleHash(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash |= 0;
+  // Human vs Bot Comparison
+  const humanStoreIframe = document.getElementById('human-store-iframe');
+  const botCodeView = document.getElementById('bot-code-view');
+  const botSampleSeed = document.getElementById('bot-sample-seed');
+  const botSampleMode = document.getElementById('bot-sample-mode');
+  const botSampleEntropy = document.getElementById('bot-sample-entropy');
+  const botModePill = document.getElementById('bot-mode-pill');
+  const btnRefreshBotView = document.getElementById('btn-refresh-bot-view');
+
+  // Terminal & Scraper
+  const securityEventTerminal = document.getElementById('security-event-terminal');
+  const scraperOutputTerminal = document.getElementById('scraper-output-terminal');
+  const btnRunScraper = document.getElementById('btn-run-scraper');
+  const botTableBody = document.getElementById('bot-table-body');
+
+  // Audio Context Tracker
+  let lastAlertId = null;
+  let audioContext = null;
+
+  /**
+   * Synthesize Security Siren Alert using Web Audio API (Zero external audio files)
+   */
+  function playAlertSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!audioContext) audioContext = new AudioCtx();
+      if (audioContext.state === 'suspended') audioContext.resume();
+
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      osc.type = 'sawtooth';
+      // Pitch drop alert siren
+      osc.frequency.setValueAtTime(880, audioContext.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(320, audioContext.currentTime + 0.35);
+
+      gain.gain.setValueAtTime(0.25, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.35);
+
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+
+      osc.start();
+      osc.stop(audioContext.currentTime + 0.35);
+    } catch (err) {
+      console.warn('[Audio] Web Audio alert not permitted yet:', err);
     }
-    return '0x' + (hash >>> 0).toString(16).padStart(8, '0');
   }
 
-  // Escape HTML for code viewer
+  // HTML entity escaper
   function escapeHtml(str) {
     return str
       .replace(/&/g, '&amp;')
@@ -57,78 +88,128 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Highlights polymorphic differences in source snippets for visual impact
+   * Highlights polymorphic differences and honeypots in Bot HTML snippet
    */
-  function formatSnippet(html) {
-    // Extract a focused segment around the first product card for clean side-by-side viewing
-    const match = html.match(/(<div[^>]*class="[^"]*(?:product-card|g_|c_|v_)[^"]*"[\s\S]*?<\/button>\s*<\/div>)/i);
-    const snippet = match ? match[1] : html.substring(0, 700);
+  function highlightBotHtml(html) {
+    // Locate the first product card or honeypot chunk
+    const match = html.match(/(<div[^>]*class="[^"]*(?:product-card|g_|c_|v_|k_)[^"]*"[\s\S]*?<\/button>\s*<\/div>)/i);
+    let snippet = match ? match[1] : html.substring(0, 850);
+
+    // If in aggressive mode, also include a honeypot trap snippet if present
+    if (html.includes('ghost-honeypot-trap')) {
+      const hpMatch = html.match(/(<div[^>]*class="[^"]*ghost-honeypot-trap[^"]*"[\s\S]*?<\/a>\s*<\/div>\s*<\/div>)/i);
+      if (hpMatch) {
+        snippet = hpMatch[1] + "\n\n<!-- [REAL PRODUCT MUTATION] -->\n" + snippet;
+      }
+    }
 
     let escaped = escapeHtml(snippet);
 
-    // Highlight class attributes (red/pink highlight)
-    escaped = escaped.replace(/(class=&quot;[^&]*&quot;)/g, '<span class="diff-highlight-class">$1</span>');
+    // Highlight Honeypots in Gold / Amber
+    escaped = escaped.replace(/(class=&quot;[^&]*ghost-honeypot-trap[^&]*&quot;)/g, '<span class="hl-honeypot">$1</span>');
+    escaped = escaped.replace(/(data-ghostdom-trap=&quot;true&quot;)/g, '<span class="hl-honeypot">$1</span>');
+    escaped = escaped.replace(/(&lt;span class=&quot;price&quot;&gt;\$(?:0\.00|9\.99|14\.50|499\.00|4\.99|1\.99|19\.95|12\.99)&lt;\/span&gt;)/g, '<span class="hl-honeypot">$1</span>');
 
-    // Highlight wrapper nodes or ghost-wrap attributes (blue highlight)
-    escaped = escaped.replace(/(data-ghost-wrap=&quot;[^&]*&quot;)/g, '<span class="diff-highlight-wrap">$1</span>');
+    // Highlight randomized class names in Red/Pink
+    escaped = escaped.replace(/(class=&quot;[^&]*(?:g_|c_|v_|k_)[a-f0-9]{6,8}[^&]*&quot;)/g, '<span class="hl-class">$1</span>');
 
-    // Highlight decoy data attributes (green highlight)
-    escaped = escaped.replace(/(data-(?:item-hash|v-rendered|ghost-ref|ui-key)=&quot;[^&]*&quot;)/g, '<span class="diff-highlight-attr">$1</span>');
+    // Highlight wrapper nodes in Blue
+    escaped = escaped.replace(/(data-ghost-wrap=&quot;[^&]*&quot;)/g, '<span class="hl-wrap">$1</span>');
+
+    // Highlight decoy attributes in Green
+    escaped = escaped.replace(/(data-(?:item-hash|v-rendered|ghost-ref|ui-key|poison-sig)=&quot;[^&]*&quot;)/g, '<span class="hl-attr">$1</span>');
 
     return escaped;
   }
 
   /**
-   * Fetch system status & metrics
+   * Update Dashboard State from Server Telemetry
    */
   async function fetchStatus() {
     try {
       const res = await fetch('/api/status');
       const data = await res.json();
 
-      // Update toggle UI
-      toggleCheckbox.checked = data.enabled;
+      // 1. Master Shield Toggle
+      masterShieldToggle.checked = data.enabled;
       if (data.enabled) {
-        toggleLabel.innerHTML = 'GhostDOM: <strong>ACTIVE</strong>';
-        toggleLabel.className = 'toggle-label';
-        dotStatus.className = 'status-indicator-dot active';
-        valStatus.textContent = 'ACTIVE';
-        valStatus.style.color = '#10b981';
-        valStatusSub.textContent = 'Mutating HTML/CSS on every request';
+        masterToggleLabel.innerHTML = 'GhostDOM: <strong>ACTIVE</strong>';
       } else {
-        toggleLabel.innerHTML = 'GhostDOM: <strong>BYPASSED</strong>';
-        toggleLabel.className = 'toggle-label disabled';
-        dotStatus.className = 'status-indicator-dot disabled';
-        valStatus.textContent = 'BYPASS';
-        valStatus.style.color = '#ef4444';
-        valStatusSub.textContent = 'Original static HTML/CSS served';
+        masterToggleLabel.innerHTML = 'GhostDOM: <strong style="color: #ef4444;">BYPASSED</strong>';
       }
 
-      // Latency
-      valLatency.textContent = data.metrics.avgDurationMs || '1.24';
+      // 2. Mode Badge & Dot
+      const isAggressive = data.mode === 'AGGRESSIVE';
+      if (isAggressive) {
+        deckModeBadge.className = 'mode-badge aggressive';
+        deckModeBadge.textContent = 'AGGRESSIVE MODE';
+        deckModeDot.className = 'mode-indicator-dot aggressive';
+        botModePill.textContent = 'AGGRESSIVE PAYLOAD (DATA POISONING)';
+        botModePill.className = 'comp-pill bot';
+      } else {
+        deckModeBadge.className = 'mode-badge normal';
+        deckModeBadge.textContent = data.enabled ? 'NORMAL MODE' : 'BYPASSED';
+        deckModeDot.className = data.enabled ? 'mode-indicator-dot' : 'mode-indicator-dot aggressive';
+        botModePill.textContent = data.enabled ? 'POLYMORPHIC PAYLOAD' : 'STATIC PAYLOAD';
+        botModePill.className = data.enabled ? 'comp-pill bot' : 'comp-pill human';
+      }
 
-      // Scraper success rate calculation
+      // 3. Stats
+      statRequestsMutated.textContent = data.stats.mutatedRequests || 0;
+      statBotsDetected.textContent = data.stats.honeypotHits || 0;
+      statLatency.textContent = data.metrics.avgDurationMs || '1.18';
+
+      // Scraper Success Rate
       const totalAttempts = data.stats.scraperAttempts;
       const successes = data.stats.scraperSuccesses;
-      const rate = totalAttempts > 0 ? ((successes / totalAttempts) * 100).toFixed(1) : (data.enabled ? '0.0' : '100.0');
-      valSuccessRate.textContent = `${rate}%`;
+      const rate = totalAttempts > 0 
+        ? ((successes / totalAttempts) * 100).toFixed(1)
+        : (data.enabled ? '0.0' : '100.0');
 
+      statSuccessRate.textContent = `${rate}%`;
       if (data.enabled) {
-        badgeRate.textContent = '0% (NEUTRALIZED)';
-        badgeRate.className = 'badge-rate';
+        statRateBadge.textContent = isAggressive ? '0% (POISONED)' : '0% (BLOCKED)';
+        statRateBadge.className = 'comp-pill bot';
       } else {
-        badgeRate.textContent = '100% (VULNERABLE)';
-        badgeRate.className = 'badge-rate success';
+        statRateBadge.textContent = '100% (VULNERABLE)';
+        statRateBadge.className = 'comp-pill human';
       }
 
-      valTraps.textContent = data.stats.honeypotHits;
+      // 4. Alert Banner Reactive Reaction
+      if (data.latestAlert && data.latestAlert.active) {
+        alertBanner.classList.add('active');
+        alertIp.textContent = data.latestAlert.ip;
+        alertTime.textContent = data.latestAlert.timeStr;
+        alertVector.textContent = data.latestAlert.trapType;
+
+        // Play sound once per unique alert ID
+        if (data.latestAlert.id !== lastAlertId) {
+          lastAlertId = data.latestAlert.id;
+          playAlertSound();
+        }
+      } else {
+        alertBanner.classList.remove('active');
+      }
+
+      // 5. Update Terminal Event Stream
+      if (data.events && data.events.length > 0) {
+        securityEventTerminal.innerHTML = data.events.map(ev => {
+          let levelClass = 'info';
+          if (ev.level === 'ALERT') levelClass = 'alert';
+          if (ev.level === 'WARN') levelClass = 'warn';
+          if (ev.level === 'POISON') levelClass = 'poison';
+          if (ev.level === 'SUCCESS') levelClass = 'success';
+          return `<div class="log-entry ${levelClass}">[${ev.timeStr}] ${escapeHtml(ev.message)}</div>`;
+        }).join('');
+      }
+
     } catch (err) {
-      console.warn('Failed to fetch status:', err);
+      console.warn('Status fetch error:', err);
     }
   }
 
   /**
-   * Fetch detected bots list
+   * Fetch Bot Table
    */
   async function fetchBots() {
     try {
@@ -138,202 +219,186 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!bots || bots.length === 0) {
         botTableBody.innerHTML = `
           <tr>
-            <td colspan="5" class="table-empty">No bots detected yet. Run the scraper demo or trigger a honeypot.</td>
+            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 18px;">
+              No bots trapped yet. Click "Simulate Bot Attack" or run the scraper.
+            </td>
           </tr>
         `;
         return;
       }
 
-      botTableBody.innerHTML = bots.map(bot => {
+      botTableBody.innerHTML = bots.slice(0, 10).map(bot => {
         const time = new Date(bot.timestamp).toLocaleTimeString();
         return `
           <tr>
             <td style="font-family: var(--font-mono);">${time}</td>
             <td style="font-family: var(--font-mono); color: #38bdf8;">${bot.ip}</td>
-            <td><span style="font-family: var(--font-mono); font-size: 11px;">${bot.trapType}</span></td>
-            <td style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #94a3b8;" title="${bot.userAgent}">
-              ${bot.userAgent}
+            <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${bot.trapType}">
+              ${bot.trapType}
             </td>
-            <td><span class="bot-badge-blocked">BLOCKED</span></td>
+            <td><span class="badge-blocked">QUARANTINED</span></td>
           </tr>
         `;
       }).join('');
-    } catch (err) {
-      console.warn('Failed to fetch bots:', err);
+    } catch (e) {
+      console.warn(e);
     }
   }
 
   /**
-   * Fetch 2 Consecutive HTML requests to demonstrate live polymorphism
+   * Fetch Fresh Sample for Bot View (Right Panel)
    */
-  async function fetchConsecutiveDiff() {
-    if (isFetchingDiff) return;
-    isFetchingDiff = true;
-    btnFetchDiff.disabled = true;
-    btnFetchDiff.innerHTML = `<span>Fetching...</span>`;
-
-    codeReq1.textContent = 'Requesting HTTP sample 1...';
-    codeReq2.textContent = 'Requesting HTTP sample 2...';
-
+  async function fetchBotSample() {
     try {
-      // Fetch Sample 1
-      const res1 = await fetch('/api/source-sample?t=1');
-      const data1 = await res1.json();
+      const res = await fetch('/api/source-sample');
+      const data = await res.json();
 
-      // Delay 40ms to simulate consecutive requests
-      await new Promise(r => setTimeout(r, 40));
+      botSampleSeed.textContent = data.seed ? `0x${data.seed}` : 'STATIC';
+      botSampleMode.textContent = data.mode || (data.status === 'ACTIVE' ? 'NORMAL' : 'BYPASSED');
+      botSampleMode.style.color = data.mode === 'AGGRESSIVE' ? '#ef4444' : '#10b981';
 
-      // Fetch Sample 2
-      const res2 = await fetch('/api/source-sample?t=2');
-      const data2 = await res2.json();
-
-      const hash1 = simpleHash(data1.html);
-      const hash2 = simpleHash(data2.html);
-
-      hashReq1.textContent = hash1;
-      hashReq2.textContent = hash2;
-
-      req1Meta.textContent = `${data1.status} | ${data1.latencyMs || '0.9'}ms`;
-      req2Meta.textContent = `${data2.status} | ${data2.latencyMs || '1.1'}ms`;
-
-      codeReq1.innerHTML = formatSnippet(data1.html);
-      codeReq2.innerHTML = formatSnippet(data2.html);
-
-      if (data1.status === 'ACTIVE' && hash1 !== hash2) {
-        entropyPill.textContent = '100% POLYMORPHIC DIVERGENCE (ENTROPY ACTIVE)';
-        entropyPill.style.background = 'rgba(16, 185, 129, 0.15)';
-        entropyPill.style.color = 'var(--accent-green)';
-        entropyPill.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+      if (data.status === 'ACTIVE') {
+        botSampleEntropy.textContent = data.mode === 'AGGRESSIVE' ? 'HYPER-ENTROPY (POISONING)' : '100% ENTROPY';
+        botSampleEntropy.style.color = data.mode === 'AGGRESSIVE' ? '#f59e0b' : '#10b981';
       } else {
-        entropyPill.textContent = 'IDENTICAL STATIC CODE (GHOSTDOM BYPASSED)';
-        entropyPill.style.background = 'rgba(239, 68, 68, 0.15)';
-        entropyPill.style.color = 'var(--accent-red)';
-        entropyPill.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        botSampleEntropy.textContent = '0% (STATIC CODE)';
+        botSampleEntropy.style.color = '#ef4444';
       }
-    } catch (err) {
-      codeReq1.textContent = 'Error loading request 1: ' + err.message;
-      codeReq2.textContent = 'Error loading request 2: ' + err.message;
-    } finally {
-      isFetchingDiff = false;
-      btnFetchDiff.disabled = false;
-      btnFetchDiff.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M23 4v6h-6"></path>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-        </svg>
-        Fetch 2 Consecutive Requests
-      `;
+
+      botCodeView.innerHTML = highlightBotHtml(data.html);
+    } catch (e) {
+      botCodeView.textContent = 'Error fetching bot sample: ' + e.message;
     }
   }
 
   /**
-   * Terminal Line Append Helper
+   * Helper to append lines to Scraper terminal
    */
-  function logTerminal(text, className = '') {
-    const line = document.createElement('div');
-    line.className = `term-line ${className}`;
-    line.innerHTML = text;
-    terminalBody.appendChild(line);
-    terminalBody.scrollTop = terminalBody.scrollHeight;
+  function logScraperTerminal(text, className = 'info') {
+    const div = document.createElement('div');
+    div.className = `log-entry ${className}`;
+    div.innerHTML = text;
+    scraperOutputTerminal.appendChild(div);
+    scraperOutputTerminal.scrollTop = scraperOutputTerminal.scrollHeight;
   }
 
   /**
-   * Execute Live Scraper Demo via API
+   * Run Live Scraper Test
    */
-  async function runScraperDemo() {
+  async function runScraperTest() {
     btnRunScraper.disabled = true;
-    terminalBody.innerHTML = '';
+    scraperOutputTerminal.innerHTML = '';
 
-    logTerminal('$ python scraper/scraper.py --target http://localhost:3000', 'prompt');
+    logScraperTerminal('$ python scraper/scraper.py --target http://localhost:3000', 'info');
+    await new Promise(r => setTimeout(r, 150));
+    logScraperTerminal('[HTTP] Connecting to BROKART catalog at http://localhost:3000/...', 'info');
     await new Promise(r => setTimeout(r, 200));
-
-    logTerminal('[INFO] Initializing HTTP crawler session with headers...', 'info');
-    await new Promise(r => setTimeout(r, 250));
 
     try {
       const res = await fetch('/api/scraper-test', { method: 'POST' });
       const result = await res.json();
 
-      logTerminal(`[HTTP] Connected to ${result.targetUrl} (Status: ${result.statusCode})`, 'info');
-      await new Promise(r => setTimeout(r, 200));
-
-      logTerminal(`[PARSER] Querying DOM for price elements: soup.select(".price")`, 'prompt');
-      await new Promise(r => setTimeout(r, 300));
+      logScraperTerminal(`[PARSER] Querying DOM with selector: .price`, 'warn');
+      await new Promise(r => setTimeout(r, 250));
 
       if (result.success) {
         // Scraper Succeeded (GhostDOM was OFF)
-        logTerminal(`[FOUND] Successfully extracted ${result.productCount} products!`, 'success');
+        logScraperTerminal(`[SUCCESS] Extracted ${result.productCount} legitimate products:`, 'success');
         result.samples.forEach(s => {
-          logTerminal(`  ✓ ${s.name} &rarr; <strong style="color:#10b981">${s.price}</strong>`, 'success');
+          logScraperTerminal(`  ✓ ${s.name} &rarr; <strong style="color: #10b981;">${s.price}</strong>`, 'success');
         });
-        logTerminal(`[RESULT] SCRAPING SUCCESSFUL: Site is vulnerable to fixed CSS selectors.`, 'warn');
+        logScraperTerminal(`[ALERT] BROKART is VULNERABLE: Competitor bot extracted all pricing in 18ms!`, 'warn');
       } else {
         // Scraper Failed / Trapped (GhostDOM was ON)
-        logTerminal(`[FAIL] Real product prices extracted: 0`, 'failure');
-        if (result.honeypotFound) {
-          logTerminal(`[HONEYPOT TRIGGERED] Scraped decoy price: <strong style="color:#ef4444">${result.honeypotPrice}</strong>`, 'failure');
-          logTerminal(`[TRAP] Hidden honeypot link followed: ${result.honeypotLink}`, 'warn');
-          logTerminal(`[DEFENSE] IP quarantined and logged to GhostDOM Blocklist!`, 'failure');
+        logScraperTerminal(`[NEUTRALIZED] Legitimate products extracted: 0`, 'alert');
+
+        if (result.mode === 'AGGRESSIVE') {
+          logScraperTerminal(`[DATA POISONED] Scraper fell for ${result.honeypotCount} decoy traps!`, 'poison');
+          if (result.honeypotPrices) {
+            logScraperTerminal(`[POISON INGESTED] False prices harvested: ${result.honeypotPrices.join(', ')}`, 'poison');
+          }
+          logScraperTerminal(`[DEFENSE] Competitor crawler dataset permanently contaminated.`, 'alert');
         } else {
-          logTerminal(`[PROTECTION] Fixed selector '.price' returned 0 matches due to class aliasing.`, 'warn');
+          logScraperTerminal(`[TRAPPED] Extracted decoy price: <strong style="color:#ef4444;">${result.primaryHoneypotPrice}</strong>`, 'alert');
+          logScraperTerminal(`[HONEYPOT] Hidden link followed & IP quarantined.`, 'alert');
         }
-        logTerminal(`[RESULT] SCRAPING NEUTRALIZED: Bot trapped by GhostDOM polymorphism.`, 'failure');
+
+        playAlertSound();
       }
 
-      // Refresh stats & bot feed
       await fetchStatus();
       await fetchBots();
+      await fetchBotSample();
     } catch (err) {
-      logTerminal(`[ERROR] Execution failure: ${err.message}`, 'failure');
+      logScraperTerminal(`[ERROR] Execution failure: ${err.message}`, 'alert');
     } finally {
       btnRunScraper.disabled = false;
     }
   }
 
   // Event Listeners
-  toggleCheckbox.addEventListener('change', async () => {
-    try {
-      const res = await fetch('/api/toggle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: toggleCheckbox.checked })
-      });
-      const data = await res.json();
-      await fetchStatus();
-      await fetchConsecutiveDiff();
-    } catch (err) {
-      console.error('Toggle failed:', err);
-    }
-  });
-
-  btnFetchDiff.addEventListener('click', fetchConsecutiveDiff);
-  btnRunScraper.addEventListener('click', runScraperDemo);
-
   btnSimulateBot.addEventListener('click', async () => {
     try {
-      await fetch('/honeypot/trap?token=simulated_stage_demo&source=decoy_anchor');
-      await fetchBots();
+      playAlertSound();
+      const res = await fetch('/api/bot-attack', { method: 'POST' });
       await fetchStatus();
+      await fetchBots();
+      await fetchBotSample();
+      // Reload human iframe preview to verify human view is still 100% intact
+      if (humanStoreIframe) humanStoreIframe.src = '/';
     } catch (e) {
       console.warn(e);
     }
   });
 
-  btnClearBots.addEventListener('click', async () => {
+  btnResetDemo.addEventListener('click', async () => {
     try {
-      await fetch('/api/bots/clear', { method: 'POST' });
-      await fetchBots();
+      await fetch('/api/reset', { method: 'POST' });
+      scraperOutputTerminal.innerHTML = `
+        <div class="log-entry info">$ python scraper/scraper.py</div>
+        <div class="log-entry info">[Ready] Demo reset to initial state.</div>
+      `;
       await fetchStatus();
+      await fetchBots();
+      await fetchBotSample();
+      if (humanStoreIframe) humanStoreIframe.src = '/';
     } catch (e) {
       console.warn(e);
     }
   });
+
+  btnDismissAlert.addEventListener('click', async () => {
+    try {
+      await fetch('/api/dismiss-alert', { method: 'POST' });
+      alertBanner.classList.remove('active');
+    } catch (e) {
+      alertBanner.classList.remove('active');
+    }
+  });
+
+  masterShieldToggle.addEventListener('change', async () => {
+    try {
+      await fetch('/api/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: masterShieldToggle.checked })
+      });
+      await fetchStatus();
+      await fetchBotSample();
+      if (humanStoreIframe) humanStoreIframe.src = '/';
+    } catch (e) {
+      console.warn(e);
+    }
+  });
+
+  btnRefreshBotView.addEventListener('click', fetchBotSample);
+  btnRunScraper.addEventListener('click', runScraperTest);
 
   // Initial Boot
   fetchStatus();
   fetchBots();
-  fetchConsecutiveDiff();
+  fetchBotSample();
 
-  // Periodic poll for stats
-  setInterval(fetchStatus, 4000);
+  // Fast polling for instant reaction
+  setInterval(fetchStatus, 2000);
 });

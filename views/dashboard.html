@@ -3,228 +3,263 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GhostDOM — Live Defense Dashboard & Control Deck</title>
+  <title>GhostDOM — Security Command Deck</title>
   
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="deck-wrapper">
-    <!-- Top Bar -->
+  <div class="deck-container">
+    
+    <!-- Big Flashing Red Alert Banner (Instant Reaction) -->
+    <div id="bot-alert-banner" class="bot-alert-banner" role="alert" aria-live="assertive">
+      <div class="alert-left-content">
+        <span class="alert-skull-icon">💀</span>
+        <div>
+          <div class="alert-title-text">
+            <span>☠ BOT DETECTED ☠</span>
+            <span class="alert-mode-tag">SWITCHED TO AGGRESSIVE MODE</span>
+          </div>
+          <div class="alert-subtitle-text" id="alert-subtitle-text">
+            Flagged IP: <strong id="alert-ip">127.0.0.1</strong> &bull; 
+            Time: <span id="alert-time">--:--:--</span> &bull; 
+            Vector: <span id="alert-vector">Accessed hidden honeypot price</span>
+          </div>
+        </div>
+      </div>
+      <div class="alert-actions">
+        <button id="btn-dismiss-alert" class="btn-dismiss-alert">Dismiss Alert</button>
+      </div>
+    </div>
+
+    <!-- Top Command Deck Header -->
     <header class="deck-header">
-      <div class="header-left">
-        <div class="deck-logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-            <path d="M2 17l10 5 10-5"></path>
-            <path d="M2 12l10 5 10-5"></path>
+      <div class="header-brand">
+        <div class="deck-icon-badge">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2.3">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
           </svg>
         </div>
         <div>
-          <h1 class="deck-title">GhostDOM <span class="tag">DEFENSE DECK</span></h1>
-          <p class="deck-subtitle">Server-Side Polymorphic DOM & Honeypot Bot Countermeasures</p>
+          <h1 class="deck-headline">
+            GhostDOM <span class="deck-version-tag">DEFENSE DECK v2.0</span>
+          </h1>
+          <p class="deck-tagline">Real-Time DOM Polymorphism, Poisoning &amp; Bot Defense for BROKART</p>
         </div>
       </div>
 
-      <div class="header-right">
-        <!-- Master Toggle -->
-        <div class="toggle-control-card">
-          <span class="toggle-label" id="toggle-label-text">GhostDOM: <strong>ACTIVE</strong></span>
+      <div class="header-deck-controls">
+        <!-- Live Mode Indicator & Switch -->
+        <div class="mode-indicator-box">
+          <span class="mode-indicator-dot" id="deck-mode-dot"></span>
+          <span>MODE:</span>
+          <span class="mode-badge normal" id="deck-mode-badge">NORMAL MODE</span>
+        </div>
+
+        <!-- Master Shield Toggle Switch -->
+        <div class="master-toggle-wrap">
+          <span id="master-toggle-label">GhostDOM: <strong>ACTIVE</strong></span>
           <label class="switch">
-            <input type="checkbox" id="ghostdom-toggle" checked>
+            <input type="checkbox" id="master-shield-toggle" checked>
             <span class="slider round"></span>
           </label>
         </div>
 
-        <a href="/" target="_blank" class="deck-btn-secondary">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <line x1="10" y1="14" x2="21" y2="3"></line>
-          </svg>
-          Open Storefront
+        <!-- Primary Actions -->
+        <button id="btn-simulate-bot" class="btn-deck-action btn-deck-danger" title="Trigger a live bot honeypot strike">
+          <span>⚡ Simulate Bot Attack</span>
+        </button>
+
+        <button id="btn-reset-demo" class="btn-deck-action" title="Clear logs, blocklist, and restore Normal mode">
+          <span>↺ Reset Demo</span>
+        </button>
+
+        <a href="/" target="_blank" class="btn-deck-action" title="Open BROKART store in new tab">
+          <span>Storefront &rarr;</span>
         </a>
       </div>
     </header>
 
-    <!-- Metrics Row -->
-    <div class="metrics-grid">
-      <!-- Status -->
-      <div class="metric-card" id="card-status">
-        <div class="metric-head">
-          <span class="metric-title">SHIELD STATUS</span>
-          <span class="status-indicator-dot active" id="dot-status"></span>
+    <!-- Top Stat Cards -->
+    <div class="stats-deck-grid">
+      <!-- Requests Mutated -->
+      <div class="stat-deck-card">
+        <div class="stat-card-head">
+          <span class="stat-card-title">Requests Mutated</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
         </div>
-        <div class="metric-val" id="val-status">ACTIVE</div>
-        <div class="metric-footnote" id="val-status-sub">Mutating HTML/CSS on every hit</div>
+        <div class="stat-card-val" id="stat-requests-mutated">0</div>
+        <div class="stat-card-sub">Polymorphic transformations served</div>
       </div>
 
-      <!-- Latency Overhead -->
-      <div class="metric-card">
-        <div class="metric-head">
-          <span class="metric-title">MUTATION OVERHEAD</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2">
+      <!-- Bots Detected -->
+      <div class="stat-deck-card">
+        <div class="stat-card-head">
+          <span class="stat-card-title">Bots Detected</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div class="stat-card-val" id="stat-bots-detected" style="color: #f87171;">0</div>
+        <div class="stat-card-sub">Scrapers lured into honeypots</div>
+      </div>
+
+      <!-- Scraper Success Rate -->
+      <div class="stat-deck-card">
+        <div class="stat-card-head">
+          <span class="stat-card-title">Scraper Success Rate</span>
+          <span id="stat-rate-badge" class="comp-pill bot">0.0% (BLOCKED)</span>
+        </div>
+        <div class="stat-card-val" id="stat-success-rate">0.0%</div>
+        <div class="stat-card-sub">Extracting genuine <code>.price</code> data</div>
+      </div>
+
+      <!-- Average Overhead -->
+      <div class="stat-deck-card">
+        <div class="stat-card-head">
+          <span class="stat-card-title">Avg Overhead</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
         </div>
-        <div class="metric-val"><span id="val-latency">1.42</span> <span class="unit">ms</span></div>
-        <div class="metric-footnote">Avg AST transformation latency</div>
-      </div>
-
-      <!-- Scraper Success Rate -->
-      <div class="metric-card">
-        <div class="metric-head">
-          <span class="metric-title">SCRAPER SUCCESS RATE</span>
-          <span class="badge-rate" id="badge-rate">0% (BLOCKED)</span>
-        </div>
-        <div class="metric-val" id="val-success-rate">0.0%</div>
-        <div class="metric-footnote">Scraper queries targeting <code>.price</code></div>
-      </div>
-
-      <!-- Bots Trapped -->
-      <div class="metric-card">
-        <div class="metric-head">
-          <span class="metric-title">HONEYPOT TRAPS HIT</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-            <line x1="12" y1="9" x2="12" y2="13"></line>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-          </svg>
-        </div>
-        <div class="metric-val"><span id="val-traps">0</span> <span class="unit">bots</span></div>
-        <div class="metric-footnote">IPs logged in blocklist</div>
+        <div class="stat-card-val"><span id="stat-latency">1.25</span> <span class="unit">ms</span></div>
+        <div class="stat-card-sub">Server AST mutation latency</div>
       </div>
     </div>
 
-    <!-- Main Content Area: Diff Inspector + Scraper Console -->
-    <div class="main-split-grid">
-      <!-- Side-by-side Consecutive Requests Inspector -->
-      <section class="panel-section source-inspector-panel">
-        <div class="panel-header">
-          <div class="panel-title-wrap">
-            <span class="panel-icon">⚡</span>
-            <div>
-              <h2 class="panel-title">Polymorphic Entropy Inspector</h2>
-              <p class="panel-desc">Compare two consecutive requests to verify 100% dynamic DOM polymorphism</p>
-            </div>
+    <!-- Main Comparison Split: What the Human Sees vs What the Bot Sees -->
+    <div class="comparison-split-grid">
+      <!-- Left Panel: What the Human Sees -->
+      <section class="comp-panel">
+        <div class="comp-panel-header">
+          <div class="comp-title-wrap">
+            <span class="comp-icon">👤</span>
+            <h2 class="comp-title">What the Human Sees (BROKART)</h2>
           </div>
-          <button id="btn-fetch-diff" class="btn-action">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M23 4v6h-6"></path>
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-            </svg>
-            Fetch 2 Consecutive Requests
-          </button>
+          <span class="comp-pill human">LIGHT THEME STOREFRONT</span>
         </div>
+        <p class="comp-explanation-line">
+          Clean visual storefront with authentic prices, pixel-perfect rendering, and zero UX friction.
+        </p>
 
-        <div class="diff-summary-bar">
-          <div class="summary-item">
-            <span class="lbl">REQUEST 1 DOM SIGNATURE:</span>
-            <span class="hash" id="hash-req-1">Calculating...</span>
-          </div>
-          <div class="summary-vs">≠</div>
-          <div class="summary-item">
-            <span class="lbl">REQUEST 2 DOM SIGNATURE:</span>
-            <span class="hash" id="hash-req-2">Calculating...</span>
-          </div>
-          <div class="entropy-pill" id="entropy-pill">100% POLYMORPHIC DIVERGENCE</div>
+        <!-- Live Embedded Human Storefront Preview -->
+        <div class="human-preview-wrap">
+          <iframe id="human-store-iframe" class="human-preview-iframe" src="/" title="Live Human Storefront Preview"></iframe>
         </div>
+      </section>
 
-        <div class="side-by-side-container">
-          <!-- Request 1 View -->
-          <div class="code-column">
-            <div class="column-header">
-              <span class="col-tag">REQUEST #1 (T = 0ms)</span>
-              <span class="col-meta" id="req1-meta">HTML Payload</span>
-            </div>
-            <pre class="code-view" id="code-req-1">Loading Request 1 source...</pre>
+      <!-- Right Panel: What the Bot Sees -->
+      <section class="comp-panel">
+        <div class="comp-panel-header">
+          <div class="comp-title-wrap">
+            <span class="comp-icon">🤖</span>
+            <h2 class="comp-title">What the Bot Sees (Raw DOM Payload)</h2>
           </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button id="btn-refresh-bot-view" class="btn-deck-action" style="padding: 4px 10px; font-size: 11px;">
+              ↺ Refresh Sample
+            </button>
+            <span class="comp-pill bot" id="bot-mode-pill">POLYMORPHIC PAYLOAD</span>
+          </div>
+        </div>
+        <p class="comp-explanation-line">
+          Randomized transient classes, mutated wrapper tags, poisoned decoy prices, and invisible honeypots.
+        </p>
 
-          <!-- Request 2 View -->
-          <div class="code-column">
-            <div class="column-header">
-              <span class="col-tag col-tag-alt">REQUEST #2 (T + 20ms)</span>
-              <span class="col-meta" id="req2-meta">HTML Payload</span>
-            </div>
-            <pre class="code-view" id="code-req-2">Loading Request 2 source...</pre>
+        <!-- Bot Code View -->
+        <div class="bot-code-wrap">
+          <div class="bot-code-toolbar">
+            <span>SEED: <strong class="meta-seed" id="bot-sample-seed">0x4a9f</strong></span>
+            <span>MODE: <strong id="bot-sample-mode" style="color: #10b981;">NORMAL</strong></span>
+            <span class="meta-entropy" id="bot-sample-entropy">100% ENTROPY</span>
+          </div>
+          <pre class="bot-code-view" id="bot-code-view">Loading raw HTML payload for bot crawler...</pre>
+        </div>
+      </section>
+    </div>
+
+    <!-- Bottom Row: Terminal Event Log & Live Scraper Runner -->
+    <div class="bottom-deck-grid">
+      <!-- Live Security Terminal Event Log -->
+      <section class="panel-card">
+        <div class="panel-card-head">
+          <h2 class="panel-card-title">
+            <span style="color: #38bdf8;">⚡</span>
+            <span>Security Operations Event Stream</span>
+          </h2>
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">
+            Real-time server telemetry
+          </span>
+        </div>
+        <div class="terminal-box">
+          <div class="terminal-titlebar">
+            <span class="term-dot r"></span>
+            <span class="term-dot y"></span>
+            <span class="term-dot g"></span>
+            <span>ghostdom@defense-core: event_stream.log</span>
+          </div>
+          <div class="terminal-content" id="security-event-terminal">
+            <div class="log-entry info">[--:--:--] Initializing event feed...</div>
           </div>
         </div>
       </section>
 
-      <!-- Right Column: Live Scraper Tester & Bot Log -->
-      <div class="right-stack">
-        <!-- Live Scraper Interactive Console -->
-        <section class="panel-section console-panel">
-          <div class="panel-header">
-            <div class="panel-title-wrap">
-              <span class="panel-icon">🕷️</span>
-              <div>
-                <h2 class="panel-title">Live Scraper Test Runner</h2>
-                <p class="panel-desc">Execute naive <code>.price</code> crawler against current state</p>
-              </div>
-            </div>
-            <button id="btn-run-scraper" class="btn-action btn-danger">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-              Run Scraper Test
-            </button>
-          </div>
+      <!-- Live Scraper Interactive Runner & Bot Feed -->
+      <section class="panel-card">
+        <div class="panel-card-head">
+          <h2 class="panel-card-title">
+            <span style="color: #ef4444;">🕷️</span>
+            <span>Live Scraper Test Runner</span>
+          </h2>
+          <button id="btn-run-scraper" class="btn-deck-action btn-deck-danger" style="padding: 6px 12px; font-size: 12px;">
+            <span>▶ Run Scraper Test</span>
+          </button>
+        </div>
 
-          <div class="terminal-window">
-            <div class="terminal-bar">
-              <span class="term-dot red"></span>
-              <span class="term-dot yellow"></span>
-              <span class="term-dot green"></span>
-              <span class="term-title">terminal: python scraper.py --target http://localhost:3000</span>
-            </div>
-            <div class="terminal-body" id="scraper-terminal">
-              <div class="term-line prompt">$ python scraper/scraper.py</div>
-              <div class="term-line text-muted">[System Ready] Click "Run Scraper Test" to benchmark defense.</div>
-            </div>
+        <div class="terminal-box" style="height: 140px; margin-bottom: 12px;">
+          <div class="terminal-titlebar">
+            <span class="term-dot r"></span>
+            <span class="term-dot y"></span>
+            <span class="term-dot g"></span>
+            <span>target: http://localhost:3000/ (selector: .price)</span>
           </div>
-        </section>
+          <div class="terminal-content" id="scraper-output-terminal">
+            <div class="log-entry info">$ python scraper/scraper.py</div>
+            <div class="log-entry info">[Ready] Click "Run Scraper Test" to benchmark active defense.</div>
+          </div>
+        </div>
 
-        <!-- Bot Detection Feed -->
-        <section class="panel-section bot-panel">
-          <div class="panel-header">
-            <div class="panel-title-wrap">
-              <span class="panel-icon">🛡️</span>
-              <div>
-                <h2 class="panel-title">Detected Bot Activity Feed</h2>
-                <p class="panel-desc">Real-time log of honeypot traps triggered by scrapers</p>
-              </div>
-            </div>
-            <div class="panel-actions">
-              <button id="btn-simulate-bot" class="btn-action-sm">Simulate Bot</button>
-              <button id="btn-clear-bots" class="btn-action-sm btn-subtle">Clear Log</button>
-            </div>
-          </div>
-
-          <div class="table-container">
-            <table class="bot-table">
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>IP Address</th>
-                  <th>Trap Vector</th>
-                  <th>User Agent</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="bot-table-body">
-                <tr>
-                  <td colspan="5" class="table-empty">No bots detected yet. Trigger a honeypot or run the scraper.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
+        <!-- Trapped Bots Table -->
+        <div class="bot-table-wrap">
+          <table class="deck-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Flagged IP</th>
+                <th>Trap Vector</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="bot-table-body">
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 18px;">
+                  No bots trapped yet. Click "Simulate Bot Attack" or run the scraper.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
+
   </div>
 
   <script src="/js/dashboard.js"></script>

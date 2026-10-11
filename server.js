@@ -1,7 +1,7 @@
 /**
- * GhostDOM Express Server (server.js)
- * High-performance Node.js backend hosting the e-commerce storefront,
- * GhostDOM polymorphic middleware, honeypot traps, and presentation dashboard.
+ * GhostDOM Express Server (server.js) - v2.0
+ * Hosts the BROKART e-commerce storefront, GhostDOM polymorphic middleware,
+ * instant bot reaction pipeline, and presentation command deck.
  */
 
 const express = require('express');
@@ -32,8 +32,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static assets (CSS, JS, images)
-// Note: style.css is publicly served for GhostDOM OFF mode;
-// when GhostDOM is ON, it is inlined & mutated directly in the HTML response.
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Mount GhostDOM response interception middleware on all routes
@@ -44,7 +42,8 @@ app.use(ghostdom.middleware());
 // ============================================================================
 
 /**
- * Storefront Home Route (Target of GhostDOM polymorphism)
+ * Storefront Home Route (BROKART Light Theme)
+ * Target of GhostDOM polymorphism
  */
 app.get('/', (req, res) => {
   const indexPath = path.join(__dirname, 'views/index.html');
@@ -54,8 +53,8 @@ app.get('/', (req, res) => {
 });
 
 /**
- * Live Presentation Dashboard Route
- * (Excluded from mutation so presenter controls remain pristine)
+ * Live Presentation Dashboard Route (GhostDOM Dark Theme)
+ * Excluded from mutation so presenter controls remain pristine
  */
 app.get('/dashboard', (req, res) => {
   const dashboardPath = path.join(__dirname, 'views/dashboard.html');
@@ -72,10 +71,6 @@ app.get('/dashboard', (req, res) => {
 // HONEYPOT & BOT TRAP ROUTES
 // ============================================================================
 
-/**
- * Honeypot Trap Endpoint
- * Hidden links and forms point here. Any visitor hitting this URL is recorded as a bot.
- */
 app.get('/honeypot/trap', (req, res) => {
   ghostdom.honeypotHandler(req, res);
 });
@@ -89,20 +84,33 @@ app.post('/honeypot/trap', (req, res) => {
 // ============================================================================
 
 /**
- * System Status & Metrics
+ * System Status, Telemetry & Real-Time Event Feed
  */
 app.get('/api/status', (req, res) => {
   res.json({
     enabled: ghostdom.enabled,
+    mode: ghostdom.mode, // 'NORMAL' | 'AGGRESSIVE'
     metrics: ghostdom.mutator.getMetrics(),
     stats: ghostdom.stats,
     blockedIpCount: ghostdom.blockedIPs.size,
-    detectedBotCount: ghostdom.detectedBots.length
+    detectedBotCount: ghostdom.detectedBots.length,
+    latestAlert: ghostdom.latestAlert,
+    events: ghostdom.eventLog.slice(0, 30) // Most recent 30 events
   });
 });
 
 /**
- * Toggle GhostDOM Master Switch
+ * Dismiss active alert banner
+ */
+app.post('/api/dismiss-alert', (req, res) => {
+  if (ghostdom.latestAlert) {
+    ghostdom.latestAlert.active = false;
+  }
+  res.json({ success: true });
+});
+
+/**
+ * Toggle Master Switch (GhostDOM ON/OFF)
  */
 app.post('/api/toggle', (req, res) => {
   const { enabled } = req.body;
@@ -110,8 +118,64 @@ app.post('/api/toggle', (req, res) => {
   res.json({
     success: true,
     enabled: newState,
+    mode: ghostdom.mode,
     message: `GhostDOM is now ${newState ? 'ACTIVE (Polymorphic)' : 'BYPASSED (Static)'}`
   });
+});
+
+/**
+ * Toggle Operational Mode ('NORMAL' vs 'AGGRESSIVE')
+ */
+app.post('/api/mode', (req, res) => {
+  const { mode } = req.body;
+  const newMode = ghostdom.setMode(mode === 'AGGRESSIVE' ? 'AGGRESSIVE' : 'NORMAL');
+  res.json({
+    success: true,
+    mode: newMode,
+    message: `Operational policy set to ${newMode} MODE`
+  });
+});
+
+/**
+ * Simulate Bot Attack (Instant reaction with alert & siren trigger)
+ */
+app.post('/api/bot-attack', (req, res) => {
+  const clientIp = ghostdom.getClientIp(req);
+  const alert = ghostdom.triggerBotReaction(
+    clientIp,
+    'Accessed hidden honeypot price (.price query)',
+    { details: 'High-frequency scraper pattern simulated from dashboard' }
+  );
+
+  const fakeBot = {
+    id: 'bot_' + Math.random().toString(36).substring(2, 9),
+    ip: clientIp,
+    timestamp: new Date().toISOString(),
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AttackCrawlerBot/3.0',
+    trapType: 'Accessed hidden honeypot price (.price query)',
+    token: 'ghst_sim_' + Math.random().toString(36).substring(2, 8),
+    path: '/catalog',
+    method: 'GET',
+    status: 'BLOCKED'
+  };
+
+  ghostdom.detectedBots.unshift(fakeBot);
+  if (ghostdom.detectedBots.length > 100) ghostdom.detectedBots.pop();
+
+  res.json({
+    success: true,
+    alert,
+    mode: 'AGGRESSIVE',
+    message: 'Bot attack triggered. Client switched to AGGRESSIVE mode.'
+  });
+});
+
+/**
+ * Reset Demo (Clears logs, resets mode back to Normal, clears blocklist)
+ */
+app.post('/api/reset', (req, res) => {
+  const result = ghostdom.resetDemo();
+  res.json(result);
 });
 
 /**
@@ -122,16 +186,7 @@ app.get('/api/bots', (req, res) => {
 });
 
 /**
- * Clear bot records & blocklist (Presentation Reset)
- */
-app.post('/api/bots/clear', (req, res) => {
-  ghostdom.clearBots();
-  res.json({ success: true, message: 'Bot database and blocklist cleared.' });
-});
-
-/**
- * Source Code Snapshot Endpoint
- * Returns a live sample of the storefront HTML for the side-by-side inspector
+ * Source Code Snapshot Endpoint for Side-by-Side Inspector
  */
 app.get('/api/source-sample', (req, res) => {
   const indexPath = path.join(__dirname, 'views/index.html');
@@ -140,17 +195,21 @@ app.get('/api/source-sample', (req, res) => {
   if (!ghostdom.enabled) {
     return res.json({
       status: 'DISABLED',
+      mode: 'DISABLED',
       latencyMs: 0.1,
       html: rawHtml
     });
   }
 
-  // Generate a live polymorphic mutation
   ghostdom.loadCss();
-  const { mutatedHtml, durationMs } = ghostdom.mutator.mutate(rawHtml, ghostdom.cachedCss);
+  const { mutatedHtml, durationMs, mode, seed } = ghostdom.mutator.mutate(rawHtml, ghostdom.cachedCss, {
+    mode: ghostdom.mode
+  });
 
   res.json({
     status: 'ACTIVE',
+    mode,
+    seed,
     latencyMs: durationMs,
     html: mutatedHtml
   });
@@ -158,7 +217,6 @@ app.get('/api/source-sample', (req, res) => {
 
 /**
  * Live Scraper Simulation Endpoint (Triggered from Dashboard)
- * Simulates a crawler targeting the standard .price selector
  */
 app.post('/api/scraper-test', (req, res) => {
   ghostdom.stats.scraperAttempts++;
@@ -169,7 +227,9 @@ app.post('/api/scraper-test', (req, res) => {
   let testHtml = rawHtml;
   if (ghostdom.enabled) {
     ghostdom.loadCss();
-    const mutated = ghostdom.mutator.mutate(rawHtml, ghostdom.cachedCss);
+    const mutated = ghostdom.mutator.mutate(rawHtml, ghostdom.cachedCss, {
+      mode: ghostdom.mode
+    });
     testHtml = mutated.mutatedHtml;
   }
 
@@ -180,7 +240,6 @@ app.post('/api/scraper-test', (req, res) => {
   const pricesFound = [];
 
   priceElements.each((_, el) => {
-    // Check if element is inside the honeypot
     const isHoneypot = $(el).closest('[data-ghostdom-trap="true"]').length > 0 || $(el).hasClass('ghost-honeypot-trap');
     pricesFound.push({
       text: $(el).text().trim(),
@@ -189,7 +248,7 @@ app.post('/api/scraper-test', (req, res) => {
   });
 
   if (!ghostdom.enabled) {
-    // GhostDOM is OFF: Naive scraper succeeds!
+    // GhostDOM is OFF: Naive scraper succeeds against BROKART!
     ghostdom.stats.scraperSuccesses++;
 
     const samples = [];
@@ -200,8 +259,11 @@ app.post('/api/scraper-test', (req, res) => {
       });
     });
 
+    ghostdom.logEvent('WARN', `Scraper successfully extracted 8 real BROKART prices (GhostDOM OFF)`);
+
     return res.json({
       success: true,
+      mode: 'DISABLED',
       statusCode: 200,
       targetUrl: 'http://localhost:' + PORT + '/',
       productCount: priceElements.length,
@@ -209,27 +271,32 @@ app.post('/api/scraper-test', (req, res) => {
     });
   }
 
-  // GhostDOM is ON: Real items have randomized classes!
+  // GhostDOM is ON: Scraper fails or is trapped/poisoned!
   ghostdom.stats.scraperFailures++;
 
-  // Check honeypot interaction
-  const honeypotPrice = pricesFound.find(p => p.isHoneypot)?.text || null;
-  const honeypotLink = $('a[href*="/honeypot/trap"]').attr('href') || '/honeypot/trap?token=auto_decoy';
+  const clientIp = ghostdom.getClientIp(req);
+  const honeypotPrices = pricesFound.filter(p => p.isHoneypot).map(p => p.text);
+  const isAggressive = ghostdom.mode === 'AGGRESSIVE';
 
   // Automatically trigger bot trap on server for this scraper
   ghostdom.recordBot(req, {
-    type: 'Automated Selector Scraper (.price query)',
-    token: honeypotLink.split('token=')[1]?.split('&')[0] || 'auto'
+    type: isAggressive 
+      ? 'Scraper crawled poisoned .price entries in AGGRESSIVE MODE'
+      : 'Accessed hidden honeypot price (.price query)',
+    token: 'auto_' + Math.random().toString(36).substring(2, 8)
   });
 
   return res.json({
     success: false,
+    mode: ghostdom.mode,
     statusCode: 200,
     targetUrl: 'http://localhost:' + PORT + '/',
     productCount: 0,
-    honeypotFound: Boolean(honeypotPrice),
-    honeypotPrice: honeypotPrice || '$0.00',
-    honeypotLink
+    honeypotFound: honeypotPrices.length > 0,
+    honeypotCount: honeypotPrices.length,
+    honeypotPrices: honeypotPrices.slice(0, 6),
+    primaryHoneypotPrice: honeypotPrices[0] || '$0.00',
+    honeypotLink: '/honeypot/trap?token=auto_decoy'
   });
 });
 
@@ -243,9 +310,9 @@ app.get('/api/products', (req, res) => {
 // Start Express Server
 app.listen(PORT, () => {
   console.log(`\x1b[36m========================================================\x1b[0m`);
-  console.log(`\x1b[32m [GhostDOM] Server running on http://localhost:${PORT}\x1b[0m`);
-  console.log(`\x1b[35m [Storefront]  http://localhost:${PORT}/\x1b[0m`);
-  console.log(`\x1b[33m [Dashboard]   http://localhost:${PORT}/dashboard\x1b[0m`);
+  console.log(`\x1b[32m [GhostDOM v2.0] Server running on http://localhost:${PORT}\x1b[0m`);
+  console.log(`\x1b[33m [BROKART Store] http://localhost:${PORT}/ (LIGHT THEME)\x1b[0m`);
+  console.log(`\x1b[35m [Command Deck]  http://localhost:${PORT}/dashboard (DARK THEME)\x1b[0m`);
   console.log(`\x1b[36m========================================================\x1b[0m`);
 });
 

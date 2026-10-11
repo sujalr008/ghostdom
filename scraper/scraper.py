@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-GhostDOM Naive Scraper Demo (scraper.py)
+GhostDOM Naive Scraper Demo (scraper.py) - v2.0
+Targets the BROKART e-commerce storefront.
 
-A standard web scraper written in Python using `requests` and `BeautifulSoup4`.
-Demonstrates how automated scrapers rely on fixed CSS selectors (like `.product-card`, `.price`)
-and how GhostDOM breaks this mechanism while trapping the crawler using honeypots.
+Demonstrates how scrapers relying on fixed selectors (.product-card, .price)
+succeed against unshielded sites, but are completely neutralized and data-poisoned
+when GhostDOM is active.
 
 Usage:
     python scraper/scraper.py
@@ -19,21 +20,29 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
+# Ensure safe encoding for Windows terminals
+if sys.platform == 'win32' and hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 # Terminal Color Codes
 GREEN = '\033[92m'
 RED = '\033[91m'
 YELLOW = '\033[93m'
 CYAN = '\033[96m'
+MAGENTA = '\033[95m'
 BOLD = '\033[1m'
 RESET = '\033[0m'
 
 def run_scraper(target_url="http://localhost:3000/", follow_honeypots=True):
-    print(f"\n{BOLD}{CYAN}{'='*70}{RESET}")
-    print(f"{BOLD}  NAIVE WEB SCRAPER — Target: {target_url}{RESET}")
-    print(f"{CYAN}{'='*70}{RESET}")
+    print(f"\n{BOLD}{CYAN}{'='*72}{RESET}")
+    print(f"{BOLD}  BROKART COMPETITOR PRICE SCRAPER — Target: {target_url}{RESET}")
+    print(f"{CYAN}{'='*72}{RESET}")
 
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) NaiveScraperBot/1.0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) BrokartScraperBot/2.0',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
     }
 
@@ -48,14 +57,16 @@ def run_scraper(target_url="http://localhost:3000/", follow_honeypots=True):
     elapsed_ms = (time.time() - start_time) * 1000
     print(f"[+] HTTP Status: {response.status_code} OK (Latency: {elapsed_ms:.1f}ms)")
 
-    # Inspect headers for GhostDOM debug signature
-    ghost_status = response.headers.get('X-GhostDOM-Status', 'UNKNOWN')
+    # Read GhostDOM debug headers
+    ghost_status = response.headers.get('X-GhostDOM-Status', 'DISABLED')
+    ghost_mode = response.headers.get('X-GhostDOM-Mode', 'NONE')
     print(f"[+] Server Header X-GhostDOM-Status: {ghost_status}")
+    print(f"[+] Server Header X-GhostDOM-Mode:   {ghost_mode}")
 
     # Parse HTML using BeautifulSoup
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Attempt to locate products using standard naive selector
+    # Query fixed selectors
     product_cards = soup.find_all('div', class_='product-card')
     price_elements = soup.select('.price')
 
@@ -63,14 +74,14 @@ def run_scraper(target_url="http://localhost:3000/", follow_honeypots=True):
     print(f"    - Elements matching 'div.product-card': {len(product_cards)}")
     print(f"    - Elements matching '.price':            {len(price_elements)}")
 
-    # Check for Honeypot presence
+    # Check for Honeypots & Poisoned elements
     honeypot_elements = soup.select('[data-ghostdom-trap="true"], .ghost-honeypot-trap')
     honeypot_triggered = len(honeypot_elements) > 0
 
-    # CASE 1: GHOSTDOM IS DISABLED (Scraper Succeeds)
+    # CASE 1: GHOSTDOM IS DISABLED (Scraper Succeeds against BROKART)
     if len(product_cards) > 0 and not honeypot_triggered:
-        print(f"\n{GREEN}{BOLD}[SUCCESS] Scraped {len(product_cards)} legitimate products:{RESET}")
-        print("-" * 70)
+        print(f"\n{GREEN}{BOLD}[SUCCESS] Scraped {len(product_cards)} legitimate BROKART products:{RESET}")
+        print("-" * 72)
         for idx, card in enumerate(product_cards, 1):
             title_el = card.find(class_='product-title')
             price_el = card.find(class_='price')
@@ -82,46 +93,57 @@ def run_scraper(target_url="http://localhost:3000/", follow_honeypots=True):
 
             print(f"  [{idx}] {title:<36} {GREEN}{price:>10}{RESET}   ({stock})")
 
-        print("-" * 70)
+        print("-" * 72)
         print(f"{GREEN}{BOLD}SCRAPE STATUS: SUCCESS (8/8 real prices extracted){RESET}")
-        print(f"{YELLOW}Vulnerability: Target site uses static CSS classes.{RESET}\n")
+        print(f"{YELLOW}Vulnerability: BROKART storefront uses static CSS classes.{RESET}\n")
         return True
 
-    # CASE 2: GHOSTDOM IS ACTIVE (Scraper Fails / Trapped)
+    # CASE 2: GHOSTDOM IS ACTIVE (Scraper Fails or is Poisoned)
     else:
-        print(f"\n{RED}{BOLD}[!] DEFENSE ACTIVATED: GhostDOM Polymorphic Mutation Detected{RESET}")
+        print(f"\n{RED}{BOLD}[!] DEFENSE ACTIVATED: GhostDOM Server-Side Polymorphism Active{RESET}")
         print(f"{RED}[!] Fixed selectors '.product-card' and '.price' neutralized.{RESET}")
 
         if honeypot_triggered:
-            trap_node = honeypot_elements[0]
-            fake_price = trap_node.select_one('.price')
-            fake_title = trap_node.select_one('.product-title')
-            trap_link = trap_node.select_one('a[href*="/honeypot/trap"]')
+            trap_count = len(honeypot_elements)
+            print(f"\n{YELLOW}{BOLD}[!] HONEYPOT BAIT ENCOUNTERED: ({trap_count} traps detected){RESET}")
 
-            fake_price_val = fake_price.get_text(strip=True) if fake_price else "$0.00"
-            fake_title_val = fake_title.get_text(strip=True) if fake_title else "Bait Product"
-            
-            print(f"\n{YELLOW}[!] HONEYPOT BAIT TRIGGERED:{RESET}")
-            print(f"    - Extracted Fake Bait Title: {fake_title_val}")
-            print(f"    - Extracted Fake Price:      {RED}{fake_price_val}{RESET} (Decoy Trap)")
+            # Collect false prices fed to the crawler
+            fake_prices = []
+            for t in honeypot_elements[:8]:
+                p = t.select_one('.price')
+                if p:
+                    fake_prices.append(p.get_text(strip=True))
 
+            if ghost_mode == 'AGGRESSIVE':
+                print(f"{MAGENTA}{BOLD}[* DATA POISONING IN PROGRESS *]{RESET}")
+                print(f"    - The server fed the crawler {trap_count} poisoned prices:")
+                print(f"      {fake_prices}")
+                print(f"    - Notice: Real product prices ($79.99, $249.00) are HIDDEN.")
+                print(f"    - Crawler dataset is permanently polluted with fabricated pricing.")
+            else:
+                primary_price = fake_prices[0] if fake_prices else "$0.00"
+                print(f"    - Extracted Fake Price: {RED}{primary_price}{RESET} (Decoy Trap)")
+
+            # Follow bait link to trigger blocklist registration
+            first_trap = honeypot_elements[0]
+            trap_link = first_trap.select_one('a[href*="/honeypot/trap"]')
             if trap_link and follow_honeypots:
                 trap_url = urljoin(target_url, trap_link['href'])
-                print(f"    - Automated crawler following bait link: {trap_url}")
+                print(f"\n[*] Automated crawler following bait link: {trap_url}")
                 try:
                     trap_res = requests.get(trap_url, headers=headers, timeout=5)
-                    print(f"    - Honeypot Response: {RED}HTTP {trap_res.status_code} (BOT FLAGGED & BLOCKED){RESET}")
+                    print(f"[*] Honeypot Response: {RED}HTTP {trap_res.status_code} (BOT FLAGGED & QUARANTINED){RESET}")
                 except Exception as trap_err:
-                    print(f"    - Honeypot connection response: {trap_err}")
+                    print(f"[*] Honeypot request error: {trap_err}")
 
-        print(f"\n{RED}{BOLD}{'='*70}{RESET}")
+        print(f"\n{RED}{BOLD}{'='*72}{RESET}")
         print(f"{RED}{BOLD}SCRAPE STATUS: FAILED (0 legitimate prices extracted){RESET}")
-        print(f"{RED}Crawler neutralized and IP logged to GhostDOM Bot Blocklist.{RESET}")
-        print(f"{CYAN}{'='*70}{RESET}\n")
+        print(f"{RED}Competitor crawler neutralized & logged to GhostDOM Blocklist.{RESET}")
+        print(f"{CYAN}{'='*72}{RESET}\n")
         return False
 
 def main():
-    parser = argparse.ArgumentParser(description="GhostDOM Naive Scraper Demo")
+    parser = argparse.ArgumentParser(description="GhostDOM BROKART Scraper Demo")
     parser.add_argument('--target', default='http://localhost:3000/', help='Target storefront URL')
     parser.add_argument('--loop', action='store_true', help='Continuously scrape every 2.5 seconds')
     parser.add_argument('--no-honeypot', action='store_true', help='Do not follow honeypot links')
