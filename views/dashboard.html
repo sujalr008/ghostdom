@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GhostDOM — Live Defense Dashboard & Control Deck</title>
+  
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="deck-wrapper">
+    <!-- Top Bar -->
+    <header class="deck-header">
+      <div class="header-left">
+        <div class="deck-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+            <path d="M2 17l10 5 10-5"></path>
+            <path d="M2 12l10 5 10-5"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="deck-title">GhostDOM <span class="tag">DEFENSE DECK</span></h1>
+          <p class="deck-subtitle">Server-Side Polymorphic DOM & Honeypot Bot Countermeasures</p>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Master Toggle -->
+        <div class="toggle-control-card">
+          <span class="toggle-label" id="toggle-label-text">GhostDOM: <strong>ACTIVE</strong></span>
+          <label class="switch">
+            <input type="checkbox" id="ghostdom-toggle" checked>
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <a href="/" target="_blank" class="deck-btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          Open Storefront
+        </a>
+      </div>
+    </header>
+
+    <!-- Metrics Row -->
+    <div class="metrics-grid">
+      <!-- Status -->
+      <div class="metric-card" id="card-status">
+        <div class="metric-head">
+          <span class="metric-title">SHIELD STATUS</span>
+          <span class="status-indicator-dot active" id="dot-status"></span>
+        </div>
+        <div class="metric-val" id="val-status">ACTIVE</div>
+        <div class="metric-footnote" id="val-status-sub">Mutating HTML/CSS on every hit</div>
+      </div>
+
+      <!-- Latency Overhead -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-title">MUTATION OVERHEAD</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div class="metric-val"><span id="val-latency">1.42</span> <span class="unit">ms</span></div>
+        <div class="metric-footnote">Avg AST transformation latency</div>
+      </div>
+
+      <!-- Scraper Success Rate -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-title">SCRAPER SUCCESS RATE</span>
+          <span class="badge-rate" id="badge-rate">0% (BLOCKED)</span>
+        </div>
+        <div class="metric-val" id="val-success-rate">0.0%</div>
+        <div class="metric-footnote">Scraper queries targeting <code>.price</code></div>
+      </div>
+
+      <!-- Bots Trapped -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-title">HONEYPOT TRAPS HIT</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <div class="metric-val"><span id="val-traps">0</span> <span class="unit">bots</span></div>
+        <div class="metric-footnote">IPs logged in blocklist</div>
+      </div>
+    </div>
+
+    <!-- Main Content Area: Diff Inspector + Scraper Console -->
+    <div class="main-split-grid">
+      <!-- Side-by-side Consecutive Requests Inspector -->
+      <section class="panel-section source-inspector-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="panel-icon">⚡</span>
+            <div>
+              <h2 class="panel-title">Polymorphic Entropy Inspector</h2>
+              <p class="panel-desc">Compare two consecutive requests to verify 100% dynamic DOM polymorphism</p>
+            </div>
+          </div>
+          <button id="btn-fetch-diff" class="btn-action">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6"></path>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            Fetch 2 Consecutive Requests
+          </button>
+        </div>
+
+        <div class="diff-summary-bar">
+          <div class="summary-item">
+            <span class="lbl">REQUEST 1 DOM SIGNATURE:</span>
+            <span class="hash" id="hash-req-1">Calculating...</span>
+          </div>
+          <div class="summary-vs">≠</div>
+          <div class="summary-item">
+            <span class="lbl">REQUEST 2 DOM SIGNATURE:</span>
+            <span class="hash" id="hash-req-2">Calculating...</span>
+          </div>
+          <div class="entropy-pill" id="entropy-pill">100% POLYMORPHIC DIVERGENCE</div>
+        </div>
+
+        <div class="side-by-side-container">
+          <!-- Request 1 View -->
+          <div class="code-column">
+            <div class="column-header">
+              <span class="col-tag">REQUEST #1 (T = 0ms)</span>
+              <span class="col-meta" id="req1-meta">HTML Payload</span>
+            </div>
+            <pre class="code-view" id="code-req-1">Loading Request 1 source...</pre>
+          </div>
+
+          <!-- Request 2 View -->
+          <div class="code-column">
+            <div class="column-header">
+              <span class="col-tag col-tag-alt">REQUEST #2 (T + 20ms)</span>
+              <span class="col-meta" id="req2-meta">HTML Payload</span>
+            </div>
+            <pre class="code-view" id="code-req-2">Loading Request 2 source...</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Live Scraper Tester & Bot Log -->
+      <div class="right-stack">
+        <!-- Live Scraper Interactive Console -->
+        <section class="panel-section console-panel">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <span class="panel-icon">🕷️</span>
+              <div>
+                <h2 class="panel-title">Live Scraper Test Runner</h2>
+                <p class="panel-desc">Execute naive <code>.price</code> crawler against current state</p>
+              </div>
+            </div>
+            <button id="btn-run-scraper" class="btn-action btn-danger">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Run Scraper Test
+            </button>
+          </div>
+
+          <div class="terminal-window">
+            <div class="terminal-bar">
+              <span class="term-dot red"></span>
+              <span class="term-dot yellow"></span>
+              <span class="term-dot green"></span>
+              <span class="term-title">terminal: python scraper.py --target http://localhost:3000</span>
+            </div>
+            <div class="terminal-body" id="scraper-terminal">
+              <div class="term-line prompt">$ python scraper/scraper.py</div>
+              <div class="term-line text-muted">[System Ready] Click "Run Scraper Test" to benchmark defense.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bot Detection Feed -->
+        <section class="panel-section bot-panel">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <span class="panel-icon">🛡️</span>
+              <div>
+                <h2 class="panel-title">Detected Bot Activity Feed</h2>
+                <p class="panel-desc">Real-time log of honeypot traps triggered by scrapers</p>
+              </div>
+            </div>
+            <div class="panel-actions">
+              <button id="btn-simulate-bot" class="btn-action-sm">Simulate Bot</button>
+              <button id="btn-clear-bots" class="btn-action-sm btn-subtle">Clear Log</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="bot-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>IP Address</th>
+                  <th>Trap Vector</th>
+                  <th>User Agent</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="bot-table-body">
+                <tr>
+                  <td colspan="5" class="table-empty">No bots detected yet. Trigger a honeypot or run the scraper.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>
