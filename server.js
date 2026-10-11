@@ -1,5 +1,5 @@
 /**
- * GhostDOM Express Server (server.js) - v2.0
+ * GhostDOM Express Server (server.js) - v3.0 Production Final
  * Hosts the BROKART e-commerce storefront, GhostDOM polymorphic middleware,
  * instant bot reaction pipeline, and presentation command deck.
  */
@@ -38,8 +38,17 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(ghostdom.middleware());
 
 // ============================================================================
-// PAGE ROUTES
+// PAGE ROUTES & ROBOTS.TXT
 // ============================================================================
+
+/**
+ * robots.txt: Disallow crawler traffic on /honeypot/ paths.
+ * Guarantees compliant search indexing bots (Googlebot, Bingbot) never hit honeypots.
+ */
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send("User-agent: *\nDisallow: /honeypot/\n");
+});
 
 /**
  * Storefront Home Route (BROKART Light Theme)
@@ -89,7 +98,7 @@ app.post('/honeypot/trap', (req, res) => {
 app.get('/api/status', (req, res) => {
   res.json({
     enabled: ghostdom.enabled,
-    mode: ghostdom.mode, // 'NORMAL' | 'AGGRESSIVE'
+    mode: ghostdom.enabled ? ghostdom.mode : 'BYPASSED',
     metrics: ghostdom.mutator.getMetrics(),
     stats: ghostdom.stats,
     blockedIpCount: ghostdom.blockedIPs.size,
@@ -118,7 +127,7 @@ app.post('/api/toggle', (req, res) => {
   res.json({
     success: true,
     enabled: newState,
-    mode: ghostdom.mode,
+    mode: newState ? ghostdom.mode : 'BYPASSED',
     message: `GhostDOM is now ${newState ? 'ACTIVE (Polymorphic)' : 'BYPASSED (Static)'}`
   });
 });
@@ -141,6 +150,37 @@ app.post('/api/mode', (req, res) => {
  */
 app.post('/api/bot-attack', (req, res) => {
   const clientIp = ghostdom.getClientIp(req);
+
+  // When GhostDOM is OFF: bot is NOT quarantined!
+  if (!ghostdom.enabled) {
+    const fakeBot = {
+      id: 'bot_' + Math.random().toString(36).substring(2, 9),
+      ip: clientIp,
+      timestamp: new Date().toISOString(),
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AttackCrawlerBot/3.0',
+      trapType: 'Simulated Scraper Hit (Static Selectors Read)',
+      token: 'N/A',
+      path: '/catalog',
+      method: 'GET',
+      status: 'ALLOWED',
+      action: 'ALLOWED'
+    };
+
+    ghostdom.detectedBots.unshift(fakeBot);
+    if (ghostdom.detectedBots.length > 100) ghostdom.detectedBots.pop();
+
+    ghostdom.logEvent('WARN', `Bot attack simulated: ${clientIp} scraped store — NOT quarantined (GhostDOM is OFF)`, clientIp);
+
+    return res.json({
+      success: true,
+      shieldActive: false,
+      mode: 'DISABLED',
+      action: 'ALLOWED',
+      message: 'GhostDOM is OFF. Bot crawled storefront freely and was NOT quarantined.'
+    });
+  }
+
+  // When GhostDOM is ON: bot is quarantined and client switched to Aggressive Mode
   const alert = ghostdom.triggerBotReaction(
     clientIp,
     'Accessed hidden honeypot price (.price query)',
@@ -156,7 +196,8 @@ app.post('/api/bot-attack', (req, res) => {
     token: 'ghst_sim_' + Math.random().toString(36).substring(2, 8),
     path: '/catalog',
     method: 'GET',
-    status: 'BLOCKED'
+    status: 'BLOCKED',
+    action: 'QUARANTINED'
   };
 
   ghostdom.detectedBots.unshift(fakeBot);
@@ -164,9 +205,11 @@ app.post('/api/bot-attack', (req, res) => {
 
   res.json({
     success: true,
+    shieldActive: true,
     alert,
     mode: 'AGGRESSIVE',
-    message: 'Bot attack triggered. Client switched to AGGRESSIVE mode.'
+    action: 'QUARANTINED',
+    message: 'Bot attack triggered. Client quarantined and switched to AGGRESSIVE mode.'
   });
 });
 
@@ -216,7 +259,7 @@ app.get('/api/source-sample', (req, res) => {
 });
 
 /**
- * Live Scraper Simulation Endpoint (Triggered from Dashboard)
+ * Live Scraper Simulation Endpoint (Triggered from Dashboard or Automated Tests)
  */
 app.post('/api/scraper-test', (req, res) => {
   ghostdom.stats.scraperAttempts++;
@@ -260,6 +303,21 @@ app.post('/api/scraper-test', (req, res) => {
     });
 
     ghostdom.logEvent('WARN', `Scraper successfully extracted 8 real BROKART prices (GhostDOM OFF)`);
+
+    const clientIp = ghostdom.getClientIp(req);
+    ghostdom.detectedBots.unshift({
+      id: 'bot_' + Math.random().toString(36).substring(2, 9),
+      ip: clientIp,
+      timestamp: new Date().toISOString(),
+      userAgent: req.headers['user-agent'] || 'Competitor Scraper (.price)',
+      trapType: 'Scraped all genuine prices (.price query)',
+      token: 'N/A',
+      path: '/',
+      method: 'GET',
+      status: 'ALLOWED',
+      action: 'ALLOWED'
+    });
+    if (ghostdom.detectedBots.length > 100) ghostdom.detectedBots.pop();
 
     return res.json({
       success: true,
@@ -308,12 +366,12 @@ app.get('/api/products', (req, res) => {
 });
 
 // Start Express Server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\x1b[36m========================================================\x1b[0m`);
-  console.log(`\x1b[32m [GhostDOM v2.0] Server running on http://localhost:${PORT}\x1b[0m`);
+  console.log(`\x1b[32m [GhostDOM v3.0] Server running on http://localhost:${PORT}\x1b[0m`);
   console.log(`\x1b[33m [BROKART Store] http://localhost:${PORT}/ (LIGHT THEME)\x1b[0m`);
   console.log(`\x1b[35m [Command Deck]  http://localhost:${PORT}/dashboard (DARK THEME)\x1b[0m`);
   console.log(`\x1b[36m========================================================\x1b[0m`);
 });
 
-module.exports = app;
+module.exports = server;

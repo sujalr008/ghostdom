@@ -1,24 +1,20 @@
 /**
- * GhostDOM Mutation Engine (mutator.js) - v2.0
+ * GhostDOM Mutation Engine (mutator.js) - v3.0 Production Final
  * 
- * Upgraded with Multi-Tier Polymorphic Modes:
- * 1. NORMAL MODE: Class name aliasing, shallow tag hierarchy wrapping, baseline stealth honeypot.
- * 2. AGGRESSIVE MODE: Deep tag hierarchy mutation, hyper-dense honeypot injection (8-10 traps),
- *    and Believable Data Poisoning (feeds fake, believable prices to .price queries to corrupt bot datasets).
- * 
- * ARCHITECTURE NOTE FOR MACHINE LEARNING EXTENSION:
- * Designed with a Strategy Pattern. The heuristic/random engine below can be seamlessly
- * swapped with an adversarial RL agent that tunes decoy entropy and wrapping depth in real time.
+ * Strict QA & Security Fixes Applied:
+ * 1. Safe Tag Hierarchy Mutation: Only wraps leaf/text nodes (.price, .product-title, .stock).
+ *    Never wraps layout containers (.product-meta, .product-card) to guarantee zero layout shift.
+ * 2. Bulletproof CSS Obfuscation: Preserves property values, pseudo-classes, and media queries.
+ * 3. 100% Inaudible & Invisible Honeypots: aria-hidden="true", tabindex="-1", zero layout footprint.
+ * 4. Believable Data Poisoning Engine in Aggressive Mode.
  */
 
 const crypto = require('crypto');
 const cheerio = require('cheerio');
 
 class GhostDomMutator {
-  /**
-   * @param {Object} options Configuration options
-   */
   constructor(options = {}) {
+    // Definitive list of target class selectors for polymorphic aliasing
     this.targetClasses = options.targetClasses || [
       'product-card',
       'product-image-wrap',
@@ -40,16 +36,15 @@ class GhostDomMutator {
       'stars',
       'review-count',
       'btn-add-cart',
-      'product-actions'
+      'product-actions',
+      'category-chip',
+      'deal-circle-badge'
     ];
 
-    // Global / fallback mode: 'NORMAL' or 'AGGRESSIVE'
     this.mode = options.mode || 'NORMAL';
-
-    // Active honeypot tokens register: token -> { issuedAt, expiresAt, mode }
     this.activeHoneypotTokens = new Map();
 
-    // Pool of believable decoy prices & titles for Data Poisoning in Aggressive Mode
+    // Believable pricing decoys for Data Poisoning in Aggressive Mode
     this.poisonDecoys = [
       { title: "Smart Sound ANC Earbuds (Decoy Bait)", price: "$9.99", stock: "In Stock (99)" },
       { title: "Mechanical Keycap Set (Clearance Bait)", price: "$14.50", stock: "Low Stock (2)" },
@@ -61,7 +56,6 @@ class GhostDomMutator {
       { title: "Ghost Trap VIP Exclusive Item", price: "$0.00", stock: "Trapped" }
     ];
 
-    // Telemetry: average mutation metrics
     this.metrics = {
       totalMutations: 0,
       totalDurationMs: 0,
@@ -69,45 +63,29 @@ class GhostDomMutator {
     };
   }
 
-  /**
-   * Set operational mode ('NORMAL' | 'AGGRESSIVE')
-   */
   setMode(mode) {
-    if (mode === 'AGGRESSIVE' || mode === 'NORMAL') {
-      this.mode = mode;
-    }
+    this.mode = mode === 'AGGRESSIVE' ? 'AGGRESSIVE' : 'NORMAL';
     return this.mode;
   }
 
-  /**
-   * Issue and track a new ephemeral honeypot token
-   * @param {string} mode 
-   * @returns {string} Unique token
-   */
   generateHoneypotToken(mode = 'NORMAL') {
     const token = 'ghst_' + crypto.randomBytes(8).toString('hex');
     const now = Date.now();
     this.activeHoneypotTokens.set(token, {
       issuedAt: now,
-      expiresAt: now + 10 * 60 * 1000, // 10 minutes TTL
+      expiresAt: now + 10 * 60 * 1000,
       mode
     });
 
-    // Cleanup expired tokens periodically
-    if (this.activeHoneypotTokens.size > 3000) {
+    // Prune stale tokens
+    if (this.activeHoneypotTokens.size > 2000) {
       for (const [t, data] of this.activeHoneypotTokens.entries()) {
         if (data.expiresAt < now) this.activeHoneypotTokens.delete(t);
       }
     }
-
     return token;
   }
 
-  /**
-   * Validates if a honeypot token was legitimately issued by GhostDOM
-   * @param {string} token 
-   * @returns {boolean}
-   */
   verifyHoneypotToken(token) {
     if (!token) return false;
     const entry = this.activeHoneypotTokens.get(token);
@@ -115,11 +93,6 @@ class GhostDomMutator {
     return entry.expiresAt > Date.now();
   }
 
-  /**
-   * Generates a randomized CSS class identifier complying with CSS syntax.
-   * e.g., 'g_7f3b8a', 'c_9a12e', etc.
-   * @returns {string}
-   */
   generateRandomClassName() {
     const prefixes = ['g_', 'c_', 'v_', 'z_', 'k_'];
     const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
@@ -127,10 +100,6 @@ class GhostDomMutator {
     return `${prefix}${hash}`;
   }
 
-  /**
-   * PHASE 1: Build dynamic class mapping for this specific request.
-   * @returns {Record<string, string>}
-   */
   createClassMap() {
     const map = {};
     for (const originalClass of this.targetClasses) {
@@ -139,43 +108,36 @@ class GhostDomMutator {
     return map;
   }
 
-  /**
-   * PHASE 2: Rewrite CSS stylesheet to match randomized class tokens.
-   * @param {string} css Raw CSS stylesheet content
-   * @param {Record<string, string>} classMap Mapping from original to obfuscated class
-   * @returns {string} Obfuscated CSS
-   */
   rewriteCSS(css, classMap) {
     let rewritten = css;
-
-    // Sort classes by length descending so longer compound names are replaced first
     const sortedClasses = Object.keys(classMap).sort((a, b) => b.length - a.length);
 
     for (const originalClass of sortedClasses) {
       const randomizedClass = classMap[originalClass];
+      // Regex ensures we only replace selector class identifiers
       const selectorRegex = new RegExp(`\\.(${originalClass})(?![a-zA-Z0-9_-])`, 'g');
       rewritten = rewritten.replace(selectorRegex, `.${randomizedClass}`);
     }
 
-    // Add helper utility for ghost-wrappers ensuring zero visual layout shift
+    // Essential reset utility for wrapper injection: display: contents dissolves the box
     rewritten += `\n/* [GhostDOM Polymorphic Resets] */\n.g-wrapper, [data-ghost-wrap] { display: contents !important; }\n`;
-
     return rewritten;
   }
 
   /**
-   * PHASE 3: Tag Hierarchy Mutation
-   * Randomly wrap target elements in harmless <div>/<span> wrappers with display: contents.
-   * In AGGRESSIVE mode, wrapper depth increases to 2-4 levels.
-   * @param {cheerio.CheerioAPI} $ Cheerio instance
-   * @param {string} effectiveMode
+   * Mutate Tag Hierarchy: ONLY wraps leaf/content elements.
+   * FIX: Never wraps layout containers (.product-meta, .product-card) to prevent flex layout collapse.
    */
   mutateHierarchy($, effectiveMode = 'NORMAL') {
-    const maxDepth = effectiveMode === 'AGGRESSIVE' ? 4 : 2;
-    const candidateSelectors = ['.product-title', '.price', '.stock', '.product-category', '.product-meta'];
+    const maxDepth = effectiveMode === 'AGGRESSIVE' ? 3 : 2;
+    // Strict leaf node selection
+    const safeLeafSelectors = ['.product-title', '.price', '.stock', '.product-category', '.product-desc', '.price-original'];
 
-    candidateSelectors.forEach(sel => {
+    safeLeafSelectors.forEach(sel => {
       $(sel).each((_, el) => {
+        // Skip elements inside honeypot traps
+        if ($(el).closest('.ghost-honeypot-trap').length > 0) return;
+
         const depth = Math.floor(Math.random() * maxDepth) + 1;
         let current = $(el);
 
@@ -189,17 +151,12 @@ class GhostDomMutator {
     });
   }
 
-  /**
-   * PHASE 4: Attribute Shuffling and Decoy Injections
-   * @param {cheerio.CheerioAPI} $ Cheerio instance
-   * @param {string} effectiveMode
-   */
   shuffleAndAddDecoyAttributes($, effectiveMode = 'NORMAL') {
-    const probability = effectiveMode === 'AGGRESSIVE' ? 0.75 : 0.4;
+    const probability = effectiveMode === 'AGGRESSIVE' ? 0.7 : 0.35;
 
     $('*').each((_, el) => {
-      if (Math.random() < probability && el.type === 'tag' && el.name !== 'html' && el.name !== 'head' && el.name !== 'body' && el.name !== 'script' && el.name !== 'style') {
-        const decoyKeys = ['data-item-hash', 'data-v-rendered', 'data-ghost-ref', 'data-ui-key', 'data-poison-sig', 'data-render-id'];
+      if (Math.random() < probability && el.type === 'tag' && !['html', 'head', 'body', 'script', 'style'].includes(el.name)) {
+        const decoyKeys = ['data-item-hash', 'data-v-rendered', 'data-ghost-ref', 'data-ui-key', 'data-render-id'];
         const randomKey = decoyKeys[Math.floor(Math.random() * decoyKeys.length)];
         const randomVal = crypto.randomBytes(3).toString('hex');
         
@@ -210,21 +167,10 @@ class GhostDomMutator {
   }
 
   /**
-   * PHASE 5: Honeypot & Data Poisoning Injection
-   * Injects hidden decoy elements that LITERALLY USE THE ORIGINAL UNMUTATED SELECTORS (.price, .product-card).
-   * 
-   * In NORMAL MODE:
-   * - Injects 1-2 stealth honeypots with $0.00 bait
-   * 
-   * In AGGRESSIVE MODE:
-   * - Injects 8-10 decoy honeypot products and poisoned pricing entries!
-   * - When scrapers crawl .price, they extract believable but totally fabricated prices ($9.99, $14.50, $499.00),
-   *   severely poisoning and corrupting their database.
-   * 
-   * @param {cheerio.CheerioAPI} $ Cheerio instance
-   * @param {string} honeypotToken Unique token for this request
-   * @param {string} effectiveMode
-   * @returns {{ count: number, poisonedPrices: string[] }}
+   * Injects Honeypot Traps with rigorous accessibility & invisibility guarantees:
+   * - aria-hidden="true" (screen readers ignore)
+   * - tabindex="-1" on interactive elements (keyboard users cannot focus)
+   * - pointer-events: none, width: 0, height: 0, overflow: hidden, position: absolute (zero visual trace)
    */
   injectHoneypotTraps($, honeypotToken, effectiveMode = 'NORMAL') {
     const grid = $('.product-grid');
@@ -236,25 +182,24 @@ class GhostDomMutator {
 
     trapsToInject.forEach((decoy, index) => {
       injectedPrices.push(decoy.price);
-
       const trapId = `trap_${index}_` + crypto.randomBytes(3).toString('hex');
+
       const honeypotHtml = `
         <div class="product-card ghost-honeypot-trap" 
              id="${trapId}"
-             style="display:none!important;visibility:hidden!important;position:absolute!important;left:-99999px!important;top:-99999px!important;opacity:0!important;pointer-events:none!important;width:0!important;height:0!important;" 
+             style="display:none!important;visibility:hidden!important;position:absolute!important;left:-99999px!important;top:-99999px!important;width:0!important;height:0!important;opacity:0!important;pointer-events:none!important;overflow:hidden!important;" 
              aria-hidden="true" 
              data-ghostdom-trap="true"
-             data-poisoned="true">
+             data-poisoned="${effectiveMode === 'AGGRESSIVE'}">
           <div class="product-info">
             <span class="product-category">Clearance Decoy</span>
             <h3 class="product-title">${decoy.title}</h3>
             <div class="product-meta">
-              <!-- Naive scraper querying '.price' extracts this poisoned/honeypot price -->
               <span class="price">${decoy.price}</span>
               <span class="stock in-stock">${decoy.stock}</span>
             </div>
-            <a href="/honeypot/trap?token=${honeypotToken}&source=decoy_anchor&idx=${index}" class="btn-add-cart add-to-cart" tabindex="-1" rel="nofollow">
-              Claim Automated Scraper Deal
+            <a href="/honeypot/trap?token=${honeypotToken}&source=decoy_anchor&idx=${index}" class="btn-add-cart add-to-cart" tabindex="-1" rel="nofollow noopener" aria-hidden="true">
+              Claim Automated Deal
             </a>
           </div>
         </div>
@@ -273,13 +218,13 @@ class GhostDomMutator {
       }
     });
 
-    // Also inject a stealth zero-pixel anchor tag for crawlers following every href
+    // Zero-pixel hidden trap for crawlers extracting all links
     const silentTrap = `
       <a href="/honeypot/trap?token=${honeypotToken}&source=silent_link" 
-         style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;" 
+         style="position:absolute;width:0;height:0;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;pointer-events:none;" 
          tabindex="-1" 
          aria-hidden="true" 
-         rel="nofollow"></a>
+         rel="nofollow noopener"></a>
     `;
     $('body').append(silentTrap);
 
@@ -289,14 +234,9 @@ class GhostDomMutator {
     };
   }
 
-  /**
-   * PHASE 6: Apply Class Obfuscation to HTML Elements
-   * @param {cheerio.CheerioAPI} $ Cheerio instance
-   * @param {Record<string, string>} classMap 
-   */
   applyClassObfuscation($, classMap) {
     $('[class]').each((_, el) => {
-      // Skip honeypot elements so they retain the unmutated .price & .product-card selectors to lure bots!
+      // Never obfuscate classes on honeypots so they lure naive .price scrapers
       if ($(el).hasClass('ghost-honeypot-trap') || $(el).closest('.ghost-honeypot-trap').length > 0) {
         return;
       }
@@ -306,52 +246,40 @@ class GhostDomMutator {
 
       const classes = originalAttr.split(/\s+/).filter(Boolean);
       const mutatedClasses = classes.map(cls => classMap[cls] || cls);
-
       $(el).attr('class', mutatedClasses.join(' '));
     });
   }
 
-  /**
-   * Main Pipeline Execution
-   * @param {string} html Raw HTML page content
-   * @param {string} css Raw CSS stylesheet content
-   * @param {Object} [overrideOptions]
-   * @returns {{ mutatedHtml: string, classMap: Record<string, string>, durationMs: number, honeypotToken: string, mode: string, honeypotCount: number, seed: string }}
-   */
   mutate(html, css, overrideOptions = {}) {
     const startTime = performance.now();
     const effectiveMode = overrideOptions.mode || this.mode;
     const seed = crypto.randomBytes(3).toString('hex');
 
-    // 1. Generate unique class map & honeypot token
     const classMap = this.createClassMap();
     const honeypotToken = this.generateHoneypotToken(effectiveMode);
 
-    // 2. Load DOM tree using Cheerio
-    const $ = cheerio.load(html, {
-      decodeEntities: false
-    });
+    const $ = cheerio.load(html, { decodeEntities: false });
 
-    // 3. Mutate tag hierarchy (inject display:contents wrappers)
+    // 1. Tag hierarchy mutation on leaf nodes
     this.mutateHierarchy($, effectiveMode);
 
-    // 4. Inject Honeypots & Believable Poisoned Data (BEFORE obfuscation so traps lure .price crawlers)
+    // 2. Inject honeypot traps (BEFORE class obfuscation so traps retain .price)
     const { count, poisonedPrices } = this.injectHoneypotTraps($, honeypotToken, effectiveMode);
 
-    // 5. Add decoy attributes & noise
+    // 3. Permute and add decoy attributes
     this.shuffleAndAddDecoyAttributes($, effectiveMode);
 
-    // 6. Obfuscate HTML class attributes for legitimate human elements
+    // 4. Obfuscate human element class attributes
     this.applyClassObfuscation($, classMap);
 
-    // 7. Rewrite CSS to match the obfuscated classes
+    // 5. Rewrite CSS to match obfuscated classes
     const mutatedCss = this.rewriteCSS(css, classMap);
 
-    // 8. Replace external CSS link with atomic inlined <style> tag
-    $('link[rel="stylesheet"][data-ghostdom-target="true"]').remove();
+    // 6. Invalidate external stylesheet and inline atomic polymorphic styles
+    $('link[rel="stylesheet"][data-ghostdom-target="true"], link[rel="stylesheet"][href*="style.css"]').remove();
     $('head').append(`\n<style id="ghostdom-polymorphic-css" data-seed="${seed}">\n${mutatedCss}\n</style>\n`);
 
-    // 9. Watermark metadata
+    // 7. Watermark signature
     $('body').attr('data-ghostdom-active', 'true');
     $('body').attr('data-ghostdom-mode', effectiveMode);
     $('body').attr('data-ghostdom-seed', seed);
@@ -359,7 +287,6 @@ class GhostDomMutator {
     const endTime = performance.now();
     const durationMs = parseFloat((endTime - startTime).toFixed(2));
 
-    // Update telemetry
     this.metrics.totalMutations++;
     this.metrics.totalDurationMs += durationMs;
     this.metrics.lastMutationDurationMs = durationMs;
@@ -376,9 +303,6 @@ class GhostDomMutator {
     };
   }
 
-  /**
-   * Get telemetry stats
-   */
   getMetrics() {
     const avg = this.metrics.totalMutations > 0 
       ? (this.metrics.totalDurationMs / this.metrics.totalMutations).toFixed(2)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-GhostDOM Naive Scraper Demo (scraper.py) - v2.0
+GhostDOM Naive Scraper Demo (scraper.py) - v3.0 Production Final
 Targets the BROKART e-commerce storefront.
 
 Demonstrates how scrapers relying on fixed selectors (.product-card, .price)
@@ -8,9 +8,10 @@ succeed against unshielded sites, but are completely neutralized and data-poison
 when GhostDOM is active.
 
 Usage:
-    python scraper/scraper.py
-    python scraper/scraper.py --target http://localhost:3000
-    python scraper/scraper.py --loop
+    py scraper/scraper.py              (Windows)
+    python3 scraper/scraper.py         (macOS / Linux)
+    py scraper/scraper.py --target http://localhost:3000
+    py scraper/scraper.py --loop
 """
 
 import sys
@@ -20,7 +21,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-# Ensure safe encoding for Windows terminals
+# Ensure safe UTF-8 encoding for Windows terminals
 if sys.platform == 'win32' and hasattr(sys.stdout, 'reconfigure'):
     try:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -42,7 +43,7 @@ def run_scraper(target_url="http://localhost:3000/", follow_honeypots=True):
     print(f"{CYAN}{'='*72}{RESET}")
 
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) BrokartScraperBot/2.0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) BrokartScraperBot/3.0',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
     }
 

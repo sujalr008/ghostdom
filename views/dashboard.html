@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GhostDOM — Security Command Deck</title>
   
+  <!-- 100% Offline Stylesheet (No External CDNs or Web Fonts) -->
   <link rel="stylesheet" href="/css/dashboard.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="deck-container">
@@ -44,7 +42,7 @@
         </div>
         <div>
           <h1 class="deck-headline">
-            GhostDOM <span class="deck-version-tag">DEFENSE DECK v2.0</span>
+            GhostDOM <span class="deck-version-tag">DEFENSE DECK v3.0</span>
           </h1>
           <p class="deck-tagline">Real-Time DOM Polymorphism, Poisoning &amp; Bot Defense for BROKART</p>
         </div>
@@ -61,28 +59,34 @@
         <!-- Master Shield Toggle Switch -->
         <div class="master-toggle-wrap">
           <span id="master-toggle-label">GhostDOM: <strong>ACTIVE</strong></span>
-          <label class="switch">
+          <label class="switch" title="Toggle GhostDOM [T]">
             <input type="checkbox" id="master-shield-toggle" checked>
             <span class="slider round"></span>
           </label>
+          <span class="key-hint">T</span>
         </div>
 
-        <!-- Primary Actions -->
-        <button id="btn-simulate-bot" class="btn-deck-action btn-deck-danger" title="Trigger a live bot honeypot strike">
-          <span>⚡ Simulate Bot Attack</span>
+
+        <!-- Primary Action: Simulate Bot Attack -->
+        <button id="btn-simulate-bot" class="btn-deck-action btn-deck-danger" title="Trigger a live bot honeypot strike [B]">
+          <span>⚡ Simulate Bot</span>
+          <span class="key-hint">B</span>
         </button>
 
-        <button id="btn-reset-demo" class="btn-deck-action" title="Clear logs, blocklist, and restore Normal mode">
-          <span>↺ Reset Demo</span>
+        <!-- Reset Demo -->
+        <button id="btn-reset-demo" class="btn-deck-action" title="Clear logs, blocklist, and restore Normal mode [R]">
+          <span>↺ Reset</span>
+          <span class="key-hint">R</span>
         </button>
 
+        <!-- Storefront Link -->
         <a href="/" target="_blank" class="btn-deck-action" title="Open BROKART store in new tab">
           <span>Storefront &rarr;</span>
         </a>
       </div>
     </header>
 
-    <!-- Top Stat Cards -->
+    <!-- Top Stat Cards & Canvas Telemetry -->
     <div class="stats-deck-grid">
       <!-- Requests Mutated -->
       <div class="stat-deck-card">
@@ -93,7 +97,7 @@
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
           </svg>
         </div>
-        <div class="stat-card-val" id="stat-requests-mutated">0</div>
+        <div class="stat-card-val count-up" id="stat-requests-mutated">0</div>
         <div class="stat-card-sub">Polymorphic transformations served</div>
       </div>
 
@@ -107,7 +111,7 @@
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
         </div>
-        <div class="stat-card-val" id="stat-bots-detected" style="color: #f87171;">0</div>
+        <div class="stat-card-val count-up" id="stat-bots-detected" style="color: #f87171;">0</div>
         <div class="stat-card-sub">Scrapers lured into honeypots</div>
       </div>
 
@@ -117,21 +121,21 @@
           <span class="stat-card-title">Scraper Success Rate</span>
           <span id="stat-rate-badge" class="comp-pill bot">0.0% (BLOCKED)</span>
         </div>
-        <div class="stat-card-val" id="stat-success-rate">0.0%</div>
+        <div class="stat-card-val count-up" id="stat-success-rate">0.0%</div>
         <div class="stat-card-sub">Extracting genuine <code>.price</code> data</div>
       </div>
 
-      <!-- Average Overhead -->
-      <div class="stat-deck-card">
+      <!-- Latency & Offline Canvas Activity Chart -->
+      <div class="stat-deck-card chart-card">
         <div class="stat-card-head">
-          <span class="stat-card-title">Avg Overhead</span>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
+          <span class="stat-card-title">Mutation Latency</span>
+          <span class="stat-chart-badge" id="chart-pulse-tag">LIVE TELEMETRY</span>
         </div>
-        <div class="stat-card-val"><span id="stat-latency">1.25</span> <span class="unit">ms</span></div>
-        <div class="stat-card-sub">Server AST mutation latency</div>
+        <div class="stat-card-row">
+          <div class="stat-card-val"><span id="stat-latency">1.18</span> <span class="unit">ms</span></div>
+          <canvas id="telemetry-chart" width="220" height="38" title="Real-time latency stream"></canvas>
+        </div>
+        <div class="stat-card-sub">Zero-overhead AST rewriting latency</div>
       </div>
     </div>
 
@@ -219,8 +223,9 @@
             <span style="color: #ef4444;">🕷️</span>
             <span>Live Scraper Test Runner</span>
           </h2>
-          <button id="btn-run-scraper" class="btn-deck-action btn-deck-danger" style="padding: 6px 12px; font-size: 12px;">
-            <span>▶ Run Scraper Test</span>
+          <button id="btn-run-scraper" class="btn-deck-action btn-deck-danger" style="padding: 6px 12px; font-size: 12px;" title="Execute scraper test [S]">
+            <span>▶ Run Scraper</span>
+            <span class="key-hint">S</span>
           </button>
         </div>
 
@@ -233,7 +238,7 @@
           </div>
           <div class="terminal-content" id="scraper-output-terminal">
             <div class="log-entry info">$ python scraper/scraper.py</div>
-            <div class="log-entry info">[Ready] Click "Run Scraper Test" to benchmark active defense.</div>
+            <div class="log-entry info">[Ready] Press "S" or click "Run Scraper" to benchmark active defense.</div>
           </div>
         </div>
 
@@ -251,7 +256,7 @@
             <tbody id="bot-table-body">
               <tr>
                 <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 18px;">
-                  No bots trapped yet. Click "Simulate Bot Attack" or run the scraper.
+                  No bots trapped yet. Press 'B' to simulate or 'S' to run scraper.
                 </td>
               </tr>
             </tbody>
@@ -259,6 +264,15 @@
         </div>
       </section>
     </div>
+
+    <!-- Presentation Hotkey Quick Reference Bar -->
+    <footer class="deck-shortcuts-footer">
+      <span class="shortcut-tip-title">⌨️ Presenter Hotkeys:</span>
+      <span class="shortcut-item"><kbd>S</kbd> Run Scraper</span>
+      <span class="shortcut-item"><kbd>B</kbd> Simulate Bot Attack</span>
+      <span class="shortcut-item"><kbd>T</kbd> Toggle Shield (ON/OFF)</span>
+      <span class="shortcut-item"><kbd>R</kbd> Reset State</span>
+    </footer>
 
   </div>
 

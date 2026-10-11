@@ -1,12 +1,13 @@
 {
   "name": "ghost-dom",
-  "version": "1.0.0",
-  "description": "Server-side DOM polymorphism middleware and honeypot bot defense engine",
+  "version": "3.0.0",
+  "description": "GhostDOM — Server-Side DOM Polymorphism, Honeypot Bot Defense & Data Poisoning Engine",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "scraper": "python scraper/scraper.py"
+    "test": "node tests/audit_tests.js",
+    "scraper": "py scraper/scraper.py || python3 scraper/scraper.py || python scraper/scraper.py"
   },
   "keywords": [
     "anti-scraping",
@@ -14,6 +15,7 @@
     "security",
     "bot-defense",
     "honeypot",
+    "data-poisoning",
     "express-middleware"
   ],
   "author": "GhostDOM Core Security Team",
